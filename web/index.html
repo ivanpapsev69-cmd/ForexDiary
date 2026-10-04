@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Forex Diary</title>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -12,61 +13,218 @@
 
 <body>
 
-  <div class="container">
+  <div class="app">
 
-    <h1>Forex Diary</h1>
-    <p class="subtitle">Твой дневник трейдера</p>
+    <!-- Верхняя панель -->
+    <header class="topbar">
+      <div>
+        <div class="logo">Forex Diary</div>
+        <div class="subtitle">Твой дневник трейдера</div>
+      </div>
 
-    <div class="menu">
-      <button onclick="showPage('home')">Главная</button>
-      <button onclick="showPage('new')">Новая сделка</button>
-      <button onclick="showPage('journal')">Журнал</button>
-      <button onclick="showPage('stats')">Статистика</button>
-    </div>
+      <div class="status">●</div>
+    </header>
 
-    <section id="home" class="page">
-      <h2>Добро пожаловать</h2>
-      <p>Forex Diary помогает вести журнал сделок и анализировать результаты.</p>
-    </section>
 
-    <section id="new" class="page hidden">
-      <h2>Новая сделка</h2>
+    <main>
 
-      <input id="pair" placeholder="Валютная пара, например EUR/USD">
+      <!-- ГЛАВНАЯ -->
+      <section id="home" class="page active">
 
-      <select id="direction">
-        <option value="BUY">BUY</option>
-        <option value="SELL">SELL</option>
-      </select>
+        <h1>Добро пожаловать 👋</h1>
 
-      <input id="entry" type="number" step="any" placeholder="Цена входа">
-      <input id="stop_loss" type="number" step="any" placeholder="Stop Loss">
-      <input id="take_profit" type="number" step="any" placeholder="Take Profit">
-      <input id="result" type="number" step="any" placeholder="Результат $">
+        <div class="dashboard">
 
-      <textarea id="notes" placeholder="Заметки"></textarea>
+          <div class="card balance-card">
+            <span>Balance</span>
+            <strong>$10,000</strong>
+            <small>Текущий баланс</small>
+          </div>
 
-      <button onclick="addTrade()">Сохранить сделку</button>
-    </section>
+          <div class="card profit-card">
+            <span>P&L</span>
+            <strong id="homeProfit">$0</strong>
+            <small>Общий результат</small>
+          </div>
 
-    <section id="journal" class="page hidden">
-      <h2>Журнал сделок</h2>
-      <div id="trades">Загрузка...</div>
-    </section>
+          <div class="card">
+            <span>Winrate</span>
+            <strong id="homeWinrate">0%</strong>
+            <small>Успешные сделки</small>
+          </div>
 
-    <section id="stats" class="page hidden">
-      <h2>Статистика</h2>
+          <div class="card">
+            <span>Сделки</span>
+            <strong id="homeTrades">0</strong>
+            <small>Всего сделок</small>
+          </div>
 
-      <p>Всего сделок: <b id="total">0</b></p>
-      <p>Прибыль: <b id="profit">0</b></p>
-      <p>Побед: <b id="wins">0</b></p>
-      <p>Убытков: <b id="losses">0</b></p>
-      <p>Winrate: <b id="winrate">0%</b></p>
-    </section>
+        </div>
+
+        <button class="primary-button" onclick="showPage('new')">
+          + Новая сделка
+        </button>
+
+        <div class="section-title">
+          Последние сделки
+        </div>
+
+        <div id="homeTradesList" class="trade-list">
+          Пока нет сделок
+        </div>
+
+      </section>
+
+
+      <!-- НОВАЯ СДЕЛКА -->
+      <section id="new" class="page">
+
+        <h1>Новая сделка</h1>
+
+        <div class="form-card">
+
+          <label>Валютная пара</label>
+          <input
+            id="pair"
+            placeholder="EUR/USD"
+          >
+
+          <label>Направление</label>
+          <select id="direction">
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+
+          <label>Цена входа</label>
+          <input
+            id="entry"
+            type="number"
+            step="any"
+            placeholder="1.08500"
+          >
+
+          <label>Stop Loss</label>
+          <input
+            id="stop_loss"
+            type="number"
+            step="any"
+            placeholder="1.08000"
+          >
+
+          <label>Take Profit</label>
+          <input
+            id="take_profit"
+            type="number"
+            step="any"
+            placeholder="1.09500"
+          >
+
+          <label>Результат ($)</label>
+          <input
+            id="result"
+            type="number"
+            step="any"
+            placeholder="100"
+          >
+
+          <label>Заметки</label>
+          <textarea
+            id="notes"
+            placeholder="Почему вошёл в сделку?"
+          ></textarea>
+
+          <button
+            class="primary-button"
+            onclick="addTrade()"
+          >
+            Сохранить сделку
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- ЖУРНАЛ -->
+      <section id="journal" class="page">
+
+        <h1>Журнал сделок</h1>
+
+        <div id="trades" class="trade-list">
+          Загрузка...
+        </div>
+
+      </section>
+
+
+      <!-- СТАТИСТИКА -->
+      <section id="stats" class="page">
+
+        <h1>Статистика</h1>
+
+        <div class="stats-grid">
+
+          <div class="card">
+            <span>Всего сделок</span>
+            <strong id="total">0</strong>
+          </div>
+
+          <div class="card">
+            <span>Прибыль</span>
+            <strong id="profit">0</strong>
+          </div>
+
+          <div class="card">
+            <span>Побед</span>
+            <strong id="wins">0</strong>
+          </div>
+
+          <div class="card">
+            <span>Убытков</span>
+            <strong id="losses">0</strong>
+          </div>
+
+        </div>
+
+        <div class="card winrate-card">
+          <span>Winrate</span>
+          <strong id="winrate">0%</strong>
+        </div>
+
+      </section>
+
+    </main>
+
+
+    <!-- Нижняя навигация -->
+    <nav class="bottom-nav">
+
+      <button onclick="showPage('home')">
+        <span>⌂</span>
+        <small>Главная</small>
+      </button>
+
+      <button onclick="showPage('new')">
+        <span>＋</span>
+        <small>Сделка</small>
+      </button>
+
+      <button onclick="showPage('journal')">
+        <span>▤</span>
+        <small>Журнал</small>
+      </button>
+
+      <button onclick="showPage('stats')">
+        <span>◔</span>
+        <small>Статистика</small>
+      </button>
+
+    </nav>
 
   </div>
 
-<script src="app.js?v=2"></script>
+
+  <script src="app.js?v=4"></script>
 
 </body>
 </html>
