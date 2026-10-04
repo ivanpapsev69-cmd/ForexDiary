@@ -9,13 +9,13 @@ const API = "/api";
 
 function showPage(page) {
   document.querySelectorAll(".page").forEach((el) => {
-    el.classList.add("hidden");
+    el.classList.remove("active");
   });
 
   const target = document.getElementById(page);
 
   if (target) {
-    target.classList.remove("hidden");
+    target.classList.add("active");
   }
 
   if (page === "journal") {
@@ -96,6 +96,10 @@ async function loadTrades() {
       headers: getHeaders()
     });
 
+    if (!response.ok) {
+      throw new Error("Ошибка загрузки");
+    }
+
     const trades = await response.json();
 
     if (!trades.length) {
@@ -127,6 +131,10 @@ async function loadStats() {
       headers: getHeaders()
     });
 
+    if (!response.ok) {
+      throw new Error("Ошибка статистики");
+    }
+
     const stats = await response.json();
 
     document.getElementById("total").textContent =
@@ -149,5 +157,4 @@ async function loadStats() {
   }
 }
 
-// Открываем главную страницу
 showPage("home");
