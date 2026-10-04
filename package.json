@@ -1,13 +1,14 @@
 {
-  "name": "forex-diary-telegram",
+  "name": "forex-diary",
   "version": "1.0.0",
-  "private": true,
-  "sqlite3": "^5.1.7"
-  "scripts": {"start": "node server.js"},
+  "description": "Forex Diary Telegram Mini App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "better-sqlite3": "^11.7.0",
-    "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "node-telegram-bot-api": "^0.66.0"
+    "node-telegram-bot-api": "^0.66.0",
+    "sqlite3": "^5.1.7"
   }
 }
