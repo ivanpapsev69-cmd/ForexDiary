@@ -7,21 +7,27 @@ const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
 
-// Подключаем папку web
 app.use(express.static(path.join(__dirname, "web")));
 
-// Главная страница
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "web", "index.html"));
 });
 
-// Проверка
 app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
-// База данных
+
+/* =========================
+   DATABASE
+========================= */
+
 const db = new sqlite3.Database("./forex_diary.db");
+
+
+/* =========================
+   TABLES
+========================= */
 
 db.run(`
   CREATE TABLE IF NOT EXISTS trades (
@@ -38,16 +44,138 @@ db.run(`
   )
 `);
 
-// Получить сделки
+
+/* Таблица балансов */
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS balances (
+    user_id TEXT PRIMARY KEY,
+    balance REAL DEFAULT 0
+  )
+`);
+
+
+/* =========================
+   GET BALANCE
+========================= */
+
+app.get("/api/balance", (req, res) => {
+
+  const userId =
+    req.headers["x-telegram-user-id"] || "demo";
+
+  db.get(
+    "SELECT balance FROM balances WHERE user_id = ?",
+    [userId],
+    (err, row) => {
+
+      if (err) {
+        return res.status(500).json({
+          error: err.message
+        });
+      }
+
+      /* Если баланса ещё нет */
+      if (!row) {
+
+        const defaultBalance = 10000;
+
+        db.run(
+          `
+          INSERT INTO balances (user_id, balance)
+          VALUES (?, ?)
+          `,
+          [userId, defaultBalance],
+          (insertErr) => {
+
+            if (insertErr) {
+              return res.status(500).json({
+                error: insertErr.message
+              });
+            }
+
+            res.json({
+              balance: defaultBalance
+            });
+          }
+        );
+
+        return;
+      }
+
+      res.json({
+        balance: Number(row.balance) || 0
+      });
+    }
+  );
+});
+
+
+/* =========================
+   UPDATE BALANCE
+========================= */
+
+app.post("/api/balance", (req, res) => {
+
+  const userId =
+    req.headers["x-telegram-user-id"] || "demo";
+
+  const balance = Number(req.body.balance);
+
+  if (!Number.isFinite(balance)) {
+    return res.status(400).json({
+      error: "Некорректный баланс"
+    });
+  }
+
+  db.run(
+    `
+    INSERT INTO balances (user_id, balance)
+    VALUES (?, ?)
+    ON CONFLICT(user_id)
+    DO UPDATE SET balance = excluded.balance
+    `,
+    [userId, balance],
+    function (err) {
+
+      if (err) {
+        return res.status(500).json({
+          error: err.message
+        });
+      }
+
+      res.json({
+        ok: true,
+        balance
+      });
+    }
+  );
+});
+
+
+/* =========================
+   TRADES
+========================= */
+
 app.get("/api/trades", (req, res) => {
-  const userId = req.headers["x-telegram-user-id"] || "demo";
+
+  const userId =
+    req.headers["x-telegram-user-id"] || "demo";
 
   db.all(
-    "SELECT * FROM trades WHERE user_id = ? ORDER BY created_at DESC",
+    `
+    SELECT *
+    FROM trades
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    `,
     [userId],
     (err, rows) => {
+
       if (err) {
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({
+          error: err.message
+        });
       }
 
       res.json(rows);
@@ -55,9 +183,15 @@ app.get("/api/trades", (req, res) => {
   );
 });
 
-// Добавить сделку
+
+/* =========================
+   ADD TRADE
+========================= */
+
 app.post("/api/trades", (req, res) => {
-  const userId = req.headers["x-telegram-user-id"] || "demo";
+
+  const userId =
+    req.headers["x-telegram-user-id"] || "demo";
 
   const {
     pair,
@@ -72,7 +206,16 @@ app.post("/api/trades", (req, res) => {
   db.run(
     `
     INSERT INTO trades
-    (user_id, pair, direction, entry, stop_loss, take_profit, result, notes)
+    (
+      user_id,
+      pair,
+      direction,
+      entry,
+      stop_loss,
+      take_profit,
+      result,
+      notes
+    )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
@@ -86,8 +229,11 @@ app.post("/api/trades", (req, res) => {
       notes || ""
     ],
     function (err) {
+
       if (err) {
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({
+          error: err.message
+        });
       }
 
       res.json({
@@ -98,16 +244,32 @@ app.post("/api/trades", (req, res) => {
   );
 });
 
-// Удалить сделку
+
+/* =========================
+   DELETE TRADE
+========================= */
+
 app.delete("/api/trades/:id", (req, res) => {
-  const userId = req.headers["x-telegram-user-id"] || "demo";
+
+  const userId =
+    req.headers["x-telegram-user-id"] || "demo";
 
   db.run(
-    "DELETE FROM trades WHERE id = ? AND user_id = ?",
-    [req.params.id, userId],
+    `
+    DELETE FROM trades
+    WHERE id = ?
+    AND user_id = ?
+    `,
+    [
+      req.params.id,
+      userId
+    ],
     function (err) {
+
       if (err) {
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({
+          error: err.message
+        });
       }
 
       res.json({
@@ -118,40 +280,97 @@ app.delete("/api/trades/:id", (req, res) => {
   );
 });
 
-// Статистика
+
+/* =========================
+   STATISTICS
+========================= */
+
 app.get("/api/stats", (req, res) => {
-  const userId = req.headers["x-telegram-user-id"] || "demo";
+
+  const userId =
+    req.headers["x-telegram-user-id"] || "demo";
 
   db.get(
     `
     SELECT
       COUNT(*) AS total,
-      COALESCE(SUM(result), 0) AS profit,
-      COALESCE(SUM(CASE WHEN result > 0 THEN 1 ELSE 0 END), 0) AS wins,
-      COALESCE(SUM(CASE WHEN result < 0 THEN 1 ELSE 0 END), 0) AS losses
+
+      COALESCE(
+        SUM(result),
+        0
+      ) AS profit,
+
+      COALESCE(
+        SUM(
+          CASE
+            WHEN result > 0 THEN 1
+            ELSE 0
+          END
+        ),
+        0
+      ) AS wins,
+
+      COALESCE(
+        SUM(
+          CASE
+            WHEN result < 0 THEN 1
+            ELSE 0
+          END
+        ),
+        0
+      ) AS losses
+
     FROM trades
+
     WHERE user_id = ?
     `,
     [userId],
     (err, row) => {
+
       if (err) {
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({
+          error: err.message
+        });
       }
 
-      const total = Number(row.total) || 0;
-      const wins = Number(row.wins) || 0;
+      const total =
+        Number(row.total) || 0;
+
+      const wins =
+        Number(row.wins) || 0;
 
       res.json({
+
         total,
-        profit: Number(row.profit) || 0,
+
+        profit:
+          Number(row.profit) || 0,
+
         wins,
-        losses: Number(row.losses) || 0,
-        winrate: total ? Math.round((wins / total) * 100) : 0
+
+        losses:
+          Number(row.losses) || 0,
+
+        winrate:
+          total
+            ? Math.round(
+                (wins / total) * 100
+              )
+            : 0
       });
     }
   );
 });
 
+
+/* =========================
+   START
+========================= */
+
 app.listen(PORT, () => {
-  console.log(`Forex Diary running on port ${PORT}`);
+
+  console.log(
+    `Forex Diary running on port ${PORT}`
+  );
+
 });
