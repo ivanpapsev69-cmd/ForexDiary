@@ -1,1 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forex Diary</title>
 
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>Forex Diary</h1>
+    <p class="subtitle">Твой дневник трейдера</p>
+
+    <div class="menu">
+      <button onclick="showPage('home')">Главная</button>
+      <button onclick="showPage('new')">Новая сделка</button>
+      <button onclick="showPage('journal')">Журнал</button>
+      <button onclick="showPage('stats')">Статистика</button>
+    </div>
+
+    <section id="home" class="page">
+      <h2>Добро пожаловать</h2>
+      <p>Forex Diary помогает вести журнал сделок и анализировать результаты.</p>
+    </section>
+
+    <section id="new" class="page hidden">
+      <h2>Новая сделка</h2>
+
+      <input id="pair" placeholder="Валютная пара, например EUR/USD">
+
+      <select id="direction">
+        <option value="BUY">BUY</option>
+        <option value="SELL">SELL</option>
+      </select>
+
+      <input id="entry" type="number" step="any" placeholder="Цена входа">
+      <input id="stop_loss" type="number" step="any" placeholder="Stop Loss">
+      <input id="take_profit" type="number" step="any" placeholder="Take Profit">
+      <input id="result" type="number" step="any" placeholder="Результат $">
+
+      <textarea id="notes" placeholder="Заметки"></textarea>
+
+      <button onclick="addTrade()">Сохранить сделку</button>
+    </section>
+
+    <section id="journal" class="page hidden">
+      <h2>Журнал сделок</h2>
+      <div id="trades">Загрузка...</div>
+    </section>
+
+    <section id="stats" class="page hidden">
+      <h2>Статистика</h2>
+
+      <p>Всего сделок: <b id="total">0</b></p>
+      <p>Прибыль: <b id="profit">0</b></p>
+      <p>Побед: <b id="wins">0</b></p>
+      <p>Убытков: <b id="losses">0</b></p>
+      <p>Winrate: <b id="winrate">0%</b></p>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
