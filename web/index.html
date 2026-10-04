@@ -1,101 +1,249 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>Forex Diary</title>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <link rel="stylesheet" href="style.css">
+
 </head>
+
 
 <body>
 
   <div class="app">
 
-    <!-- Верхняя панель -->
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+
     <header class="topbar">
+
       <div>
-        <div class="logo">Forex Diary</div>
-        <div class="subtitle">Твой дневник трейдера</div>
+
+        <div class="logo">
+          Forex Diary
+        </div>
+
+        <div class="subtitle">
+          Твой дневник трейдера
+        </div>
+
       </div>
 
-      <div class="status">●</div>
+
+      <div class="status">
+        ●
+      </div>
+
     </header>
+
 
 
     <main>
 
-      <!-- ГЛАВНАЯ -->
-      <section id="home" class="page active">
 
-        <h1>Добро пожаловать 👋</h1>
+      <!-- =========================
+           ГЛАВНАЯ
+      ========================== -->
+
+      <section
+        id="home"
+        class="page active"
+      >
+
+        <h1>
+          Добро пожаловать 👋
+        </h1>
+
 
         <div class="dashboard">
 
+
+          <!-- БАЛАНС -->
+
           <div class="card balance-card">
-            <span>Balance</span>
-            <strong>$10,000</strong>
-            <small>Текущий баланс</small>
+
+            <span>
+              Balance
+            </span>
+
+
+            <strong id="balance">
+              $10,000.00
+            </strong>
+
+
+            <button
+              class="balance-edit"
+              onclick="changeBalance()"
+            >
+              ✏️ Изменить
+            </button>
+
+
+            <small>
+              Текущий баланс
+            </small>
+
           </div>
+
+
+
+          <!-- P&L -->
 
           <div class="card profit-card">
-            <span>P&L</span>
-            <strong id="homeProfit">$0</strong>
-            <small>Общий результат</small>
+
+            <span>
+              P&L
+            </span>
+
+
+            <strong id="homeProfit">
+              $0.00
+            </strong>
+
+
+            <small>
+              Общий результат
+            </small>
+
           </div>
 
-          <div class="card">
-            <span>Winrate</span>
-            <strong id="homeWinrate">0%</strong>
-            <small>Успешные сделки</small>
-          </div>
+
+
+          <!-- WINRATE -->
 
           <div class="card">
-            <span>Сделки</span>
-            <strong id="homeTrades">0</strong>
-            <small>Всего сделок</small>
+
+            <span>
+              Winrate
+            </span>
+
+
+            <strong id="homeWinrate">
+              0%
+            </strong>
+
+
+            <small>
+              Успешные сделки
+            </small>
+
           </div>
+
+
+
+          <!-- СДЕЛКИ -->
+
+          <div class="card">
+
+            <span>
+              Сделки
+            </span>
+
+
+            <strong id="homeTrades">
+              0
+            </strong>
+
+
+            <small>
+              Всего сделок
+            </small>
+
+          </div>
+
 
         </div>
 
-        <button class="primary-button" onclick="showPage('new')">
+
+
+        <button
+          class="primary-button"
+          onclick="showPage('new')"
+        >
           + Новая сделка
         </button>
+
+
 
         <div class="section-title">
           Последние сделки
         </div>
 
-        <div id="homeTradesList" class="trade-list">
+
+        <div
+          id="homeTradesList"
+          class="trade-list"
+        >
           Пока нет сделок
         </div>
+
 
       </section>
 
 
-      <!-- НОВАЯ СДЕЛКА -->
-      <section id="new" class="page">
 
-        <h1>Новая сделка</h1>
+      <!-- =========================
+           НОВАЯ СДЕЛКА
+      ========================== -->
+
+      <section
+        id="new"
+        class="page"
+      >
+
+        <h1>
+          Новая сделка
+        </h1>
+
 
         <div class="form-card">
 
-          <label>Валютная пара</label>
+
+          <label>
+            Валютная пара
+          </label>
+
           <input
             id="pair"
             placeholder="EUR/USD"
           >
 
-          <label>Направление</label>
+
+
+          <label>
+            Направление
+          </label>
+
           <select id="direction">
-            <option value="BUY">BUY</option>
-            <option value="SELL">SELL</option>
+
+            <option value="BUY">
+              BUY
+            </option>
+
+            <option value="SELL">
+              SELL
+            </option>
+
           </select>
 
-          <label>Цена входа</label>
+
+
+          <label>
+            Цена входа
+          </label>
+
           <input
             id="entry"
             type="number"
@@ -103,7 +251,12 @@
             placeholder="1.08500"
           >
 
-          <label>Stop Loss</label>
+
+
+          <label>
+            Stop Loss
+          </label>
+
           <input
             id="stop_loss"
             type="number"
@@ -111,7 +264,12 @@
             placeholder="1.08000"
           >
 
-          <label>Take Profit</label>
+
+
+          <label>
+            Take Profit
+          </label>
+
           <input
             id="take_profit"
             type="number"
@@ -119,7 +277,12 @@
             placeholder="1.09500"
           >
 
-          <label>Результат ($)</label>
+
+
+          <label>
+            Результат ($)
+          </label>
+
           <input
             id="result"
             type="number"
@@ -127,11 +290,18 @@
             placeholder="100"
           >
 
-          <label>Заметки</label>
+
+
+          <label>
+            Заметки
+          </label>
+
           <textarea
             id="notes"
             placeholder="Почему вошёл в сделку?"
           ></textarea>
+
+
 
           <button
             class="primary-button"
@@ -140,91 +310,214 @@
             Сохранить сделку
           </button>
 
+
         </div>
 
       </section>
 
 
-      <!-- ЖУРНАЛ -->
-      <section id="journal" class="page">
 
-        <h1>Журнал сделок</h1>
+      <!-- =========================
+           ЖУРНАЛ
+      ========================== -->
 
-        <div id="trades" class="trade-list">
+      <section
+        id="journal"
+        class="page"
+      >
+
+        <h1>
+          Журнал сделок
+        </h1>
+
+
+        <div
+          id="trades"
+          class="trade-list"
+        >
           Загрузка...
         </div>
 
+
       </section>
 
 
-      <!-- СТАТИСТИКА -->
-      <section id="stats" class="page">
 
-        <h1>Статистика</h1>
+      <!-- =========================
+           СТАТИСТИКА
+      ========================== -->
+
+      <section
+        id="stats"
+        class="page"
+      >
+
+        <h1>
+          Статистика
+        </h1>
+
 
         <div class="stats-grid">
 
-          <div class="card">
-            <span>Всего сделок</span>
-            <strong id="total">0</strong>
-          </div>
 
           <div class="card">
-            <span>Прибыль</span>
-            <strong id="profit">0</strong>
+
+            <span>
+              Всего сделок
+            </span>
+
+            <strong id="total">
+              0
+            </strong>
+
           </div>
 
-          <div class="card">
-            <span>Побед</span>
-            <strong id="wins">0</strong>
-          </div>
+
 
           <div class="card">
-            <span>Убытков</span>
-            <strong id="losses">0</strong>
+
+            <span>
+              Прибыль
+            </span>
+
+            <strong id="profit">
+              $0.00
+            </strong>
+
           </div>
+
+
+
+          <div class="card">
+
+            <span>
+              Побед
+            </span>
+
+            <strong id="wins">
+              0
+            </strong>
+
+          </div>
+
+
+
+          <div class="card">
+
+            <span>
+              Убытков
+            </span>
+
+            <strong id="losses">
+              0
+            </strong>
+
+          </div>
+
 
         </div>
+
+
 
         <div class="card winrate-card">
-          <span>Winrate</span>
-          <strong id="winrate">0%</strong>
+
+          <span>
+            Winrate
+          </span>
+
+          <strong id="winrate">
+            0%
+          </strong>
+
         </div>
 
+
       </section>
+
 
     </main>
 
 
-    <!-- Нижняя навигация -->
+
+    <!-- =========================
+         НИЖНЯЯ НАВИГАЦИЯ
+    ========================== -->
+
     <nav class="bottom-nav">
 
-      <button onclick="showPage('home')">
-        <span>⌂</span>
-        <small>Главная</small>
+
+      <button
+        onclick="showPage('home')"
+      >
+
+        <span>
+          ⌂
+        </span>
+
+        <small>
+          Главная
+        </small>
+
       </button>
 
-      <button onclick="showPage('new')">
-        <span>＋</span>
-        <small>Сделка</small>
+
+
+      <button
+        onclick="showPage('new')"
+      >
+
+        <span>
+          ＋
+        </span>
+
+        <small>
+          Сделка
+        </small>
+
       </button>
 
-      <button onclick="showPage('journal')">
-        <span>▤</span>
-        <small>Журнал</small>
+
+
+      <button
+        onclick="showPage('journal')"
+      >
+
+        <span>
+          ▤
+        </span>
+
+        <small>
+          Журнал
+        </small>
+
       </button>
 
-      <button onclick="showPage('stats')">
-        <span>◔</span>
-        <small>Статистика</small>
+
+
+      <button
+        onclick="showPage('stats')"
+      >
+
+        <span>
+          ◔
+        </span>
+
+        <small>
+          Статистика
+        </small>
+
       </button>
+
 
     </nav>
+
 
   </div>
 
 
-  <script src="app.js?v=4"></script>
+
+  <script src="app.js?v=5"></script>
 
 </body>
+
 </html>
