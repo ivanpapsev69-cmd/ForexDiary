@@ -1,133 +1,216 @@
-import express from "express";
-import dotenv from "dotenv";
-import Database from "better-sqlite3";
-import TelegramBot from "node-telegram-bot-api";
-import crypto from "crypto";
-import path from "path";
-import { fileURLToPath } from "url";
+const express = require("express");
+const path = require("path");
+const sqlite3 = require("sqlite3").verbose();
+const crypto = require("crypto");
 
-dotenv.config();
 const app = express();
-const PORT = Number(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const WEBAPP_URL = process.env.WEBAPP_URL;
-
-if (!BOT_TOKEN || !WEBAPP_URL) {
-  console.warn("Set BOT_TOKEN and WEBAPP_URL in .env");
-}
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const db = new Database("forex_diary.db");
-
-db.exec(`
-CREATE TABLE IF NOT EXISTS trades (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  telegram_id TEXT NOT NULL,
-  username TEXT,
-  created_at TEXT NOT NULL,
-  pair TEXT NOT NULL,
-  direction TEXT NOT NULL,
-  entry REAL,
-  sl REAL,
-  tp REAL,
-  lots REAL,
-  risk REAL,
-  timeframe TEXT,
-  setup TEXT,
-  result TEXT,
-  pnl REAL,
-  comment TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_trades_user ON trades(telegram_id);
-`);
-
-function validateTelegramInitData(initData) {
-  if (!initData || !BOT_TOKEN) return null;
-  const params = new URLSearchParams(initData);
-  const hash = params.get("hash");
-  if (!hash) return null;
-  params.delete("hash");
-  const dataCheckString = [...params.entries()]
-    .sort(([a],[b]) => a.localeCompare(b))
-    .map(([k,v]) => `${k}=${v}`).join("\n");
-  const secret = crypto.createHmac("sha256", "WebAppData").update(BOT_TOKEN).digest();
-  const calculated = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
-  if (!crypto.timingSafeEqual(Buffer.from(calculated), Buffer.from(hash))) return null;
-  const authDate = Number(params.get("auth_date") || 0);
-  if (Date.now()/1000 - authDate > 86400) return null;
-  try { return JSON.parse(params.get("user") || "{}"); } catch { return null; }
-}
-
-function auth(req, res, next) {
-  const user = validateTelegramInitData(req.headers["x-telegram-init-data"]);
-  if (!user?.id) return res.status(401).json({error:"Telegram authorization required"});
-  req.tgUser = user;
-  next();
-}
 
 app.use(express.json());
+
+// ВАЖНО: подключаем папку web
 app.use(express.static(path.join(__dirname, "web")));
 
-app.get("/api/me", auth, (req,res) => res.json(req.tgUser));
-
-app.get("/api/trades", auth, (req,res) => {
-  const rows = db.prepare(
-    "SELECT * FROM trades WHERE telegram_id=? ORDER BY id DESC"
-  ).all(String(req.tgUser.id));
-  res.json(rows);
+// Главная страница Mini App
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "web", "index.html"));
 });
 
-app.post("/api/trades", auth, (req,res) => {
-  const b = req.body || {};
-  const stmt = db.prepare(`
-    INSERT INTO trades
-    (telegram_id,username,created_at,pair,direction,entry,sl,tp,lots,risk,timeframe,setup,result,pnl,comment)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+// Проверка сервера
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
+
+// База данных
+const db = new sqlite3.Database("./forex_diary.db");
+
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS trades (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      pair TEXT,
+      direction TEXT,
+      entry REAL,
+      stop_loss REAL,
+      take_profit REAL,
+      result REAL,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
   `);
-  const info = stmt.run(
-    String(req.tgUser.id), req.tgUser.username || "",
-    new Date().toISOString(), b.pair, b.direction, Number(b.entry)||0,
-    Number(b.sl)||0, Number(b.tp)||0, Number(b.lots)||0,
-    Number(b.risk)||0, b.timeframe || "M5", b.setup || "Order Block",
-    b.result || "Win", Number(b.pnl)||0, String(b.comment || "")
-  );
-  res.json({id: info.lastInsertRowid});
 });
 
-app.delete("/api/trades/:id", auth, (req,res) => {
-  db.prepare("DELETE FROM trades WHERE id=? AND telegram_id=?")
-    .run(Number(req.params.id), String(req.tgUser.id));
-  res.json({ok:true});
-});
+// Проверка Telegram initData
+function validateTelegramInitData(initData) {
+  if (!BOT_TOKEN || !initData) return null;
 
-app.get("/api/stats", auth, (req,res) => {
-  const rows = db.prepare("SELECT result,pnl FROM trades WHERE telegram_id=?")
-    .all(String(req.tgUser.id));
-  const wins = rows.filter(x=>x.result==="Win").length;
-  const losses = rows.filter(x=>x.result==="Loss").length;
-  const pnl = rows.reduce((s,x)=>s+Number(x.pnl||0),0);
-  const grossWin = rows.filter(x=>x.pnl>0).reduce((s,x)=>s+Number(x.pnl),0);
-  const grossLoss = Math.abs(rows.filter(x=>x.pnl<0).reduce((s,x)=>s+Number(x.pnl),0));
-  res.json({
-    total: rows.length, wins, losses, pnl,
-    winRate: (wins/Math.max(1,wins+losses))*100,
-    profitFactor: grossLoss ? grossWin/grossLoss : 0
-  });
-});
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get("hash");
 
-app.listen(PORT, () => console.log(`Forex Diary running on port ${PORT}`));
+    if (!hash) return null;
 
-if (BOT_TOKEN && WEBAPP_URL) {
-  const bot = new TelegramBot(BOT_TOKEN, {polling:true});
-  bot.onText(/\/start/, msg => {
-    bot.sendMessage(msg.chat.id,
-      "📊 Forex Diary\n\nТвой дневник Forex-сделок прямо в Telegram.",
-      {reply_markup:{inline_keyboard:[[{
-        text:"📈 Открыть Forex Diary", web_app:{url:WEBAPP_URL}
-      }]]}}
-    );
-  });
-  bot.setMyCommands([
-    {command:"start", description:"Открыть Forex Diary"}
-  ]).catch(()=>{});
+    params.delete("hash");
+
+    const dataCheckString = [...params.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n");
+
+    const secretKey = crypto
+      .createHmac("sha256", "WebAppData")
+      .update(BOT_TOKEN)
+      .digest();
+
+    const calculatedHash = crypto
+      .createHmac("sha256", secretKey)
+      .update(dataCheckString)
+      .digest("hex");
+
+    if (calculatedHash !== hash) return null;
+
+    const user = params.get("user");
+    return user ? JSON.parse(user) : null;
+  } catch {
+    return null;
+  }
 }
+
+// Получить пользователя
+app.get("/api/me", (req, res) => {
+  const user = validateTelegramInitData(req.headers["x-telegram-init-data"]);
+
+  if (!user) {
+    return res.json({
+      id: "demo",
+      first_name: "Trader"
+    });
+  }
+
+  res.json(user);
+});
+
+// Получить сделки
+app.get("/api/trades", (req, res) => {
+  const user = validateTelegramInitData(req.headers["x-telegram-init-data"]);
+  const userId = user ? String(user.id) : "demo";
+
+  db.all(
+    `SELECT * FROM trades WHERE user_id = ? ORDER BY created_at DESC`,
+    [userId],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      res.json(rows);
+    }
+  );
+});
+
+// Добавить сделку
+app.post("/api/trades", (req, res) => {
+  const user = validateTelegramInitData(req.headers["x-telegram-init-data"]);
+  const userId = user ? String(user.id) : "demo";
+
+  const {
+    pair,
+    direction,
+    entry,
+    stop_loss,
+    take_profit,
+    result,
+    notes
+  } = req.body;
+
+  db.run(
+    `
+    INSERT INTO trades
+    (user_id, pair, direction, entry, stop_loss, take_profit, result, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      userId,
+      pair || "",
+      direction || "",
+      Number(entry) || 0,
+      Number(stop_loss) || 0,
+      Number(take_profit) || 0,
+      Number(result) || 0,
+      notes || ""
+    ],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      res.json({
+        ok: true,
+        id: this.lastID
+      });
+    }
+  );
+});
+
+// Удалить сделку
+app.delete("/api/trades/:id", (req, res) => {
+  const user = validateTelegramInitData(req.headers["x-telegram-init-data"]);
+  const userId = user ? String(user.id) : "demo";
+
+  db.run(
+    `DELETE FROM trades WHERE id = ? AND user_id = ?`,
+    [req.params.id, userId],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      res.json({
+        ok: true,
+        deleted: this.changes
+      });
+    }
+  );
+});
+
+// Статистика
+app.get("/api/stats", (req, res) => {
+  const user = validateTelegramInitData(req.headers["x-telegram-init-data"]);
+  const userId = user ? String(user.id) : "demo";
+
+  db.get(
+    `
+    SELECT
+      COUNT(*) AS total,
+      COALESCE(SUM(result), 0) AS profit,
+      COALESCE(SUM(CASE WHEN result > 0 THEN 1 ELSE 0 END), 0) AS wins,
+      COALESCE(SUM(CASE WHEN result < 0 THEN 1 ELSE 0 END), 0) AS losses
+    FROM trades
+    WHERE user_id = ?
+    `,
+    [userId],
+    (err, row) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      const total = Number(row.total) || 0;
+      const wins = Number(row.wins) || 0;
+
+      res.json({
+        total,
+        profit: Number(row.profit) || 0,
+        wins,
+        losses: Number(row.losses) || 0,
+        winrate: total ? Math.round((wins / total) * 100) : 0
+      });
+    }
+  );
+});
+
+// Запуск
+app.listen(PORT, () => {
+  console.log(`Forex Diary running on port ${PORT}`);
+});
