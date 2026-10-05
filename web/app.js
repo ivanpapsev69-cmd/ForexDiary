@@ -1,17 +1,9 @@
-/* =========================
-   FOREX DIARY — STABLE APP
-   ========================= */
-
 const tg = window.Telegram?.WebApp;
 
 if (tg) {
   tg.ready();
   tg.expand();
 }
-
-/* =========================
-   HELPERS
-   ========================= */
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => document.querySelectorAll(selector);
@@ -20,6 +12,10 @@ let currentPage = "home";
 let currentFilter = "all";
 let selectedDirection = "BUY";
 let allTrades = [];
+
+/* =========================
+   API
+   ========================= */
 
 function getHeaders() {
   return {
@@ -45,13 +41,16 @@ async function api(url, options = {}) {
   return response.json();
 }
 
+/* =========================
+   HELPERS
+   ========================= */
+
 function money(value) {
   const number = Number(value) || 0;
 
-  return (
-    number < 0 ? "-$" : "$"
-  ) +
-    Math.abs(number).toFixed(2);
+  return number < 0
+    ? `-$${Math.abs(number).toFixed(2)}`
+    : `$${number.toFixed(2)}`;
 }
 
 function moneyClass(value) {
@@ -84,15 +83,18 @@ function formatDate(value) {
   });
 }
 
-function showToast(message) {
-  let toast = $("#toast");
+function setText(selector, value) {
+  const element = $(selector);
 
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toast";
-    toast.className = "toast";
-    document.body.appendChild(toast);
+  if (element) {
+    element.textContent = value;
   }
+}
+
+function showToast(message) {
+  const toast = $("#toast");
+
+  if (!toast) return;
 
   toast.textContent = message;
   toast.classList.add("show");
@@ -151,15 +153,12 @@ async function loadBalance() {
 
     const balance = Number(data.balance) || 0;
 
-    const element = $("#balance");
-
-    if (element) {
-      element.textContent = money(balance);
-    }
+    setText("#balance", money(balance));
 
     return balance;
   } catch (error) {
     console.error("Balance error:", error);
+    setText("#balance", "$0.00");
     return 0;
   }
 }
@@ -169,7 +168,7 @@ async function editBalance() {
 
   const value = prompt(
     "Введите новый баланс:",
-    Number(current).toFixed(2)
+    current.toFixed(2)
   );
 
   if (value === null) return;
@@ -190,12 +189,11 @@ async function editBalance() {
     });
 
     await loadBalance();
-    await loadHome();
 
     showToast("Баланс обновлён");
   } catch (error) {
     console.error(error);
-    showToast("Не удалось изменить баланс");
+    showToast("Ошибка изменения баланса");
   }
 }
 
@@ -209,24 +207,31 @@ async function loadHome() {
   try {
     const stats = await api("/api/stats");
 
-    const total = Number(stats.totalTrades) || 0;
-    const profit = Number(stats.totalProfit) || 0;
-    const winrate = Number(stats.winrate) || 0;
+    const total =
+      Number(stats.totalTrades) || 0;
 
-    if ($("#homeTotal")) {
-      $("#homeTotal").textContent = total;
-    }
+    const profit =
+      Number(stats.totalProfit) || 0;
 
-    if ($("#homeProfit")) {
-      $("#homeProfit").textContent = money(profit);
-      $("#homeProfit").className =
+    const winrate =
+      Number(stats.winrate) || 0;
+
+    setText("#homeTotal", total);
+
+    setText("#homeProfit", money(profit));
+
+    const profitElement = $("#homeProfit");
+
+    if (profitElement) {
+      profitElement.className =
         `stat-value ${moneyClass(profit)}`;
     }
 
-    if ($("#homeWinrate")) {
-      $("#homeWinrate").textContent =
-        `${winrate.toFixed(1)}%`;
-    }
+    setText(
+      "#homeWinrate",
+      `${winrate.toFixed(1)}%`
+    );
+
   } catch (error) {
     console.error("Home stats:", error);
   }
@@ -241,6 +246,7 @@ async function loadHome() {
     renderHomeTrades(
       allTrades.slice(0, 5)
     );
+
   } catch (error) {
     console.error("Home trades:", error);
   }
@@ -255,9 +261,11 @@ function renderHomeTrades(trades) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📒</div>
+
         <div class="empty-title">
           Сделок пока нет
         </div>
+
         <div class="empty-text">
           Добавьте первую сделку
         </div>
@@ -267,9 +275,8 @@ function renderHomeTrades(trades) {
     return;
   }
 
-  container.innerHTML = trades
-    .map(renderTradeCard)
-    .join("");
+  container.innerHTML =
+    trades.map(renderTradeCard).join("");
 }
 
 /* =========================
@@ -286,12 +293,20 @@ function setDirection(direction) {
   }
 
   $$(".direction-button").forEach((button) => {
-    button.classList.remove("active");
+    const active =
+      button.dataset.direction === direction;
 
-    if (button.dataset.direction === direction) {
-      button.classList.add("active");
+    button.classList.toggle(
+      "active",
+      active
+    );
 
-      button.classList.remove("buy", "sell");
+    if (active) {
+      button.classList.remove(
+        "buy",
+        "sell"
+      );
+
       button.classList.add(
         direction.toLowerCase()
       );
@@ -306,12 +321,23 @@ function setDirection(direction) {
 async function addTrade(event) {
   event.preventDefault();
 
-  const pair = $("#pair")?.value.trim();
-  const entry = Number($("#entry")?.value);
-  const stopLoss = Number($("#stop_loss")?.value);
-  const takeProfit = Number($("#take_profit")?.value);
-  const result = Number($("#result")?.value);
-  const notes = $("#notes")?.value.trim();
+  const pair =
+    $("#pair")?.value.trim();
+
+  const entry =
+    Number($("#entry")?.value);
+
+  const stopLoss =
+    Number($("#stop_loss")?.value);
+
+  const takeProfit =
+    Number($("#take_profit")?.value);
+
+  const result =
+    Number($("#result")?.value);
+
+  const notes =
+    $("#notes")?.value.trim();
 
   if (!pair) {
     showToast("Введите валютную пару");
@@ -326,15 +352,23 @@ async function addTrade(event) {
   const trade = {
     pair,
     direction: selectedDirection,
-    entry: Number.isFinite(entry) ? entry : null,
+
+    entry: Number.isFinite(entry)
+      ? entry
+      : null,
+
     stop_loss: Number.isFinite(stopLoss)
       ? stopLoss
       : null,
-    take_profit: Number.isFinite(takeProfit)
-      ? takeProfit
-      : null,
+
+    take_profit:
+      Number.isFinite(takeProfit)
+        ? takeProfit
+        : null,
+
     result,
     notes,
+
     date: new Date().toISOString()
   };
 
@@ -357,6 +391,7 @@ async function addTrade(event) {
     await loadHome();
 
     showPage("journal");
+
   } catch (error) {
     console.error("Add trade:", error);
     showToast("Не удалось добавить сделку");
@@ -368,14 +403,17 @@ async function addTrade(event) {
    ========================= */
 
 function renderTradeCard(trade) {
-  const result = Number(trade.result) || 0;
+  const result =
+    Number(trade.result) || 0;
 
   const direction =
     String(trade.direction || "BUY")
       .toUpperCase();
 
   const directionClass =
-    direction === "SELL" ? "sell" : "buy";
+    direction === "SELL"
+      ? "sell"
+      : "buy";
 
   return `
     <div class="trade-card">
@@ -383,20 +421,33 @@ function renderTradeCard(trade) {
       <div class="trade-top">
 
         <div class="trade-pair">
+
           <span>
-            ${escapeHtml(trade.pair || "—")}
+            ${escapeHtml(
+              trade.pair || "—"
+            )}
           </span>
 
-          <span class="trade-direction ${directionClass}">
+          <span
+            class="trade-direction ${directionClass}"
+          >
             ${direction}
           </span>
+
         </div>
 
-        <div class="trade-result ${result >= 0 ? "profit" : "loss"}">
+        <div
+          class="trade-result ${
+            result >= 0
+              ? "profit"
+              : "loss"
+          }"
+        >
           ${money(result)}
         </div>
 
       </div>
+
 
       <div class="trade-middle">
 
@@ -404,30 +455,36 @@ function renderTradeCard(trade) {
           <span class="trade-info-label">
             Entry
           </span>
+
           <span class="trade-info-value">
             ${trade.entry ?? "—"}
           </span>
         </div>
 
+
         <div class="trade-info">
           <span class="trade-info-label">
             SL
           </span>
+
           <span class="trade-info-value">
             ${trade.stop_loss ?? "—"}
           </span>
         </div>
 
+
         <div class="trade-info">
           <span class="trade-info-label">
             TP
           </span>
+
           <span class="trade-info-value">
             ${trade.take_profit ?? "—"}
           </span>
         </div>
 
       </div>
+
 
       ${
         trade.notes
@@ -446,6 +503,7 @@ function renderTradeCard(trade) {
           : ""
       }
 
+
       <div class="trade-bottom">
 
         <span class="trade-date">
@@ -458,6 +516,7 @@ function renderTradeCard(trade) {
         <button
           class="delete-trade"
           data-delete="${trade.id}"
+          type="button"
         >
           Удалить
         </button>
@@ -474,13 +533,15 @@ function renderTradeCard(trade) {
 
 async function loadJournal() {
   try {
-    const data = await api("/api/trades");
+    const data =
+      await api("/api/trades");
 
     allTrades = Array.isArray(data)
       ? data
       : data.trades || [];
 
     renderJournal();
+
   } catch (error) {
     console.error("Journal:", error);
 
@@ -518,19 +579,22 @@ function renderJournal() {
   }
 
   if (currentFilter === "today") {
-    const today = new Date()
-      .toISOString()
-      .slice(0, 10);
+    const today =
+      new Date()
+        .toISOString()
+        .slice(0, 10);
 
     trades = trades.filter((trade) => {
-      const date = new Date(
-        trade.date ||
-        trade.created_at
-      );
+      const date =
+        new Date(
+          trade.date ||
+          trade.created_at
+        );
 
       return (
         !Number.isNaN(date.getTime()) &&
-        date.toISOString().slice(0, 10) === today
+        date.toISOString()
+          .slice(0, 10) === today
       );
     });
   }
@@ -538,62 +602,78 @@ function renderJournal() {
   if (!trades.length) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">📭</div>
+
+        <div class="empty-icon">
+          📭
+        </div>
+
         <div class="empty-title">
           Сделок нет
         </div>
+
         <div class="empty-text">
-          В выбранном фильтре ничего не найдено
+          В выбранном фильтре ничего нет
         </div>
+
       </div>
     `;
 
     updateJournalSummary([]);
+
     return;
   }
 
-  container.innerHTML = trades
-    .map(renderTradeCard)
-    .join("");
+  container.innerHTML =
+    trades.map(renderTradeCard).join("");
 
   updateJournalSummary(trades);
 }
 
 function updateJournalSummary(trades) {
-  const total = trades.length;
+  const total =
+    trades.length;
 
-  const profit = trades.reduce(
-    (sum, trade) =>
-      sum + (Number(trade.result) || 0),
-    0
-  );
+  const profit =
+    trades.reduce(
+      (sum, trade) =>
+        sum +
+        (Number(trade.result) || 0),
+      0
+    );
 
-  const wins = trades.filter(
-    (trade) =>
-      Number(trade.result) > 0
-  ).length;
+  const wins =
+    trades.filter(
+      (trade) =>
+        Number(trade.result) > 0
+    ).length;
 
   const winrate =
     total > 0
       ? (wins / total) * 100
       : 0;
 
-  if ($("#journalTotal")) {
-    $("#journalTotal").textContent = total;
-  }
+  setText(
+    "#journalTotal",
+    total
+  );
 
-  if ($("#journalProfit")) {
-    $("#journalProfit").textContent =
-      money(profit);
+  setText(
+    "#journalProfit",
+    money(profit)
+  );
 
-    $("#journalProfit").className =
+  const profitElement =
+    $("#journalProfit");
+
+  if (profitElement) {
+    profitElement.className =
       `stat-value ${moneyClass(profit)}`;
   }
 
-  if ($("#journalWinrate")) {
-    $("#journalWinrate").textContent =
-      `${winrate.toFixed(1)}%`;
-  }
+  setText(
+    "#journalWinrate",
+    `${winrate.toFixed(1)}%`
+  );
 }
 
 /* =========================
@@ -603,21 +683,23 @@ function updateJournalSummary(trades) {
 async function deleteTrade(id) {
   if (!id) return;
 
-  const confirmed = confirm(
-    "Удалить эту сделку?"
-  );
-
-  if (!confirmed) return;
+  if (!confirm("Удалить эту сделку?")) {
+    return;
+  }
 
   try {
-    await api(`/api/trades/${id}`, {
-      method: "DELETE"
-    });
+    await api(
+      `/api/trades/${id}`,
+      {
+        method: "DELETE"
+      }
+    );
 
     showToast("Сделка удалена");
 
     await loadJournal();
     await loadHome();
+
   } catch (error) {
     console.error("Delete:", error);
     showToast("Не удалось удалить сделку");
@@ -629,52 +711,64 @@ async function deleteTrade(id) {
    ========================= */
 
 async function loadAnalytics() {
-  let trades = [];
-
   try {
-    const data = await api("/api/trades");
+    const data =
+      await api("/api/trades");
 
-    trades = Array.isArray(data)
-      ? data
-      : data.trades || [];
+    const trades =
+      Array.isArray(data)
+        ? data
+        : data.trades || [];
+
+    calculateAnalytics(trades);
+
   } catch (error) {
-    console.error(error);
-    return;
+    console.error(
+      "Analytics:",
+      error
+    );
   }
-
-  calculateAnalytics(trades);
 }
 
 function calculateAnalytics(trades) {
-  const results = trades.map(
-    (trade) =>
-      Number(trade.result) || 0
-  );
+  const results =
+    trades.map(
+      (trade) =>
+        Number(trade.result) || 0
+    );
 
-  const totalTrades = results.length;
+  const totalTrades =
+    results.length;
 
-  const totalProfit = results.reduce(
-    (sum, value) => sum + value,
-    0
-  );
+  const totalProfit =
+    results.reduce(
+      (sum, value) =>
+        sum + value,
+      0
+    );
 
-  const wins = results.filter(
-    (value) => value > 0
-  );
+  const wins =
+    results.filter(
+      (value) => value > 0
+    );
 
-  const losses = results.filter(
-    (value) => value < 0
-  );
+  const losses =
+    results.filter(
+      (value) => value < 0
+    );
 
   const winrate =
-    totalTrades > 0
-      ? (wins.length / totalTrades) * 100
+    totalTrades
+      ? (wins.length /
+          totalTrades) *
+        100
       : 0;
 
   const avgWin =
     wins.length
       ? wins.reduce(
-          (sum, value) => sum + value,
+          (sum, value) =>
+            sum + value,
           0
         ) / wins.length
       : 0;
@@ -683,23 +777,28 @@ function calculateAnalytics(trades) {
     losses.length
       ? Math.abs(
           losses.reduce(
-            (sum, value) => sum + value,
+            (sum, value) =>
+              sum + value,
             0
           ) / losses.length
         )
       : 0;
 
-  const grossProfit = wins.reduce(
-    (sum, value) => sum + value,
-    0
-  );
-
-  const grossLoss = Math.abs(
-    losses.reduce(
-      (sum, value) => sum + value,
+  const grossProfit =
+    wins.reduce(
+      (sum, value) =>
+        sum + value,
       0
-    )
-  );
+    );
+
+  const grossLoss =
+    Math.abs(
+      losses.reduce(
+        (sum, value) =>
+          sum + value,
+        0
+      )
+    );
 
   const profitFactor =
     grossLoss > 0
@@ -709,8 +808,9 @@ function calculateAnalytics(trades) {
         : 0;
 
   const expectancy =
-    totalTrades > 0
-      ? totalProfit / totalTrades
+    totalTrades
+      ? totalProfit /
+        totalTrades
       : 0;
 
   setText(
@@ -760,8 +860,15 @@ function calculateAnalytics(trades) {
       ? Math.min(...results)
       : 0;
 
-  setText("#aBest", money(best));
-  setText("#aWorst", money(worst));
+  setText(
+    "#aBest",
+    money(best)
+  );
+
+  setText(
+    "#aWorst",
+    money(worst)
+  );
 
   const streaks =
     calculateStreaks(results);
@@ -781,14 +888,6 @@ function calculateAnalytics(trades) {
   renderDailyAnalytics(trades);
 }
 
-function setText(selector, value) {
-  const element = $(selector);
-
-  if (element) {
-    element.textContent = value;
-  }
-}
-
 /* =========================
    STREAKS
    ========================= */
@@ -805,18 +904,16 @@ function calculateStreaks(results) {
       win++;
       loss = 0;
 
-      maxWin = Math.max(
-        maxWin,
-        win
-      );
+      maxWin =
+        Math.max(maxWin, win);
+
     } else if (result < 0) {
       loss++;
       win = 0;
 
-      maxLoss = Math.max(
-        maxLoss,
-        loss
-      );
+      maxLoss =
+        Math.max(maxLoss, loss);
+
     } else {
       win = 0;
       loss = 0;
@@ -830,15 +927,17 @@ function calculateStreaks(results) {
 }
 
 /* =========================
-   EQUITY CURVE
+   EQUITY CHART
    ========================= */
 
 function renderEquityCurve(results) {
-  const canvas = $("#equityChart");
+  const canvas =
+    $("#equityChart");
 
   if (!canvas) return;
 
-  const ctx = canvas.getContext("2d");
+  const ctx =
+    canvas.getContext("2d");
 
   const width =
     canvas.clientWidth || 500;
@@ -849,8 +948,11 @@ function renderEquityCurve(results) {
   const dpr =
     window.devicePixelRatio || 1;
 
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
+  canvas.width =
+    width * dpr;
+
+  canvas.height =
+    height * dpr;
 
   ctx.setTransform(
     dpr,
@@ -869,9 +971,14 @@ function renderEquityCurve(results) {
   );
 
   if (!results.length) {
-    ctx.fillStyle = "#8b94a3";
-    ctx.font = "13px sans-serif";
-    ctx.textAlign = "center";
+    ctx.fillStyle =
+      "#8b96a5";
+
+    ctx.font =
+      "13px sans-serif";
+
+    ctx.textAlign =
+      "center";
 
     ctx.fillText(
       "Пока недостаточно данных",
@@ -884,9 +991,7 @@ function renderEquityCurve(results) {
 
   let equity = 0;
 
-  const points = [
-    0
-  ];
+  const points = [0];
 
   results.forEach((value) => {
     equity += value;
@@ -905,18 +1010,20 @@ function renderEquityCurve(results) {
   const padding = 18;
 
   ctx.strokeStyle =
-    "#252b35";
+    "#252d38";
 
   ctx.lineWidth = 1;
 
   for (let i = 1; i <= 3; i++) {
     const y =
       padding +
-      ((height - padding * 2) *
+      ((height -
+        padding * 2) *
         i) /
         4;
 
     ctx.beginPath();
+
     ctx.moveTo(
       padding,
       y
@@ -1003,59 +1110,65 @@ function renderPairAnalytics(trades) {
     Object.entries(pairs);
 
   if (!entries.length) {
-    container.innerHTML =
-      `<div class="empty-state">
+    container.innerHTML = `
+      <div class="empty-state">
         Нет данных
-      </div>`;
+      </div>
+    `;
 
     return;
   }
 
+  entries.sort(
+    (a, b) =>
+      b[1].profit -
+      a[1].profit
+  );
+
   container.innerHTML = `
-    <div class="analytics-table">
-      <table class="analytics-table">
+    <table class="analytics-table">
 
-        <thead>
-          <tr>
-            <th>Пара</th>
-            <th>Сделки</th>
-            <th>Результат</th>
-          </tr>
-        </thead>
+      <thead>
+        <tr>
+          <th>Пара</th>
+          <th>Сделки</th>
+          <th>Результат</th>
+        </tr>
+      </thead>
 
-        <tbody>
-          ${entries
-            .sort(
-              (a, b) =>
-                b[1].profit -
-                a[1].profit
-            )
-            .map(
-              ([pair, data]) => `
-                <tr>
-                  <td>
-                    ${escapeHtml(pair)}
-                  </td>
-                  <td>
-                    ${data.trades}
-                  </td>
-                  <td
-                    class="${
-                      data.profit >= 0
-                        ? "green"
-                        : "red"
-                    }"
-                  >
-                    ${money(data.profit)}
-                  </td>
-                </tr>
-              `
-            )
-            .join("")}
-        </tbody>
+      <tbody>
 
-      </table>
-    </div>
+        ${entries
+          .map(
+            ([pair, data]) => `
+              <tr>
+
+                <td>
+                  ${escapeHtml(pair)}
+                </td>
+
+                <td>
+                  ${data.trades}
+                </td>
+
+                <td
+                  class="${
+                    data.profit >= 0
+                      ? "green"
+                      : "red"
+                  }"
+                >
+                  ${money(data.profit)}
+                </td>
+
+              </tr>
+            `
+          )
+          .join("")}
+
+      </tbody>
+
+    </table>
   `;
 }
 
@@ -1072,17 +1185,19 @@ function renderDailyAnalytics(trades) {
   const days = {};
 
   trades.forEach((trade) => {
-    const date = new Date(
-      trade.date ||
-      trade.created_at
-    );
+    const date =
+      new Date(
+        trade.date ||
+        trade.created_at
+      );
 
     if (Number.isNaN(date.getTime())) {
       return;
     }
 
     const key =
-      date.toISOString()
+      date
+        .toISOString()
         .slice(0, 10);
 
     if (!days[key]) {
@@ -1101,48 +1216,54 @@ function renderDailyAnalytics(trades) {
       .slice(-14);
 
   if (!entries.length) {
-    container.innerHTML =
-      `<div class="empty-state">
+    container.innerHTML = `
+      <div class="empty-state">
         Нет данных
-      </div>`;
+      </div>
+    `;
 
     return;
   }
 
   container.innerHTML = `
-    <div class="analytics-table">
-      <table class="analytics-table">
+    <table class="analytics-table">
 
-        <thead>
-          <tr>
-            <th>Дата</th>
-            <th>Результат</th>
-          </tr>
-        </thead>
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Результат</th>
+        </tr>
+      </thead>
 
-        <tbody>
-          ${entries
-            .map(
-              ([date, result]) => `
-                <tr>
-                  <td>${date}</td>
-                  <td
-                    class="${
-                      result >= 0
-                        ? "green"
-                        : "red"
-                    }"
-                  >
-                    ${money(result)}
-                  </td>
-                </tr>
-              `
-            )
-            .join("")}
-        </tbody>
+      <tbody>
 
-      </table>
-    </div>
+        ${entries
+          .map(
+            ([date, result]) => `
+              <tr>
+
+                <td>
+                  ${date}
+                </td>
+
+                <td
+                  class="${
+                    result >= 0
+                      ? "green"
+                      : "red"
+                  }"
+                >
+                  ${money(result)}
+                </td>
+
+              </tr>
+            `
+          )
+          .join("")}
+
+      </tbody>
+
+    </table>
   `;
 }
 
@@ -1151,7 +1272,8 @@ function renderDailyAnalytics(trades) {
    ========================= */
 
 function initEvents() {
-  /* Navigation */
+
+  /* NAVIGATION */
 
   $$(".nav-button").forEach(
     (button) => {
@@ -1166,9 +1288,11 @@ function initEvents() {
     }
   );
 
-  /* Add trade form */
 
-  const form = $("#tradeForm");
+  /* TRADE FORM */
+
+  const form =
+    $("#tradeForm");
 
   if (form) {
     form.addEventListener(
@@ -1177,7 +1301,8 @@ function initEvents() {
     );
   }
 
-  /* Direction */
+
+  /* DIRECTION */
 
   $$(".direction-button").forEach(
     (button) => {
@@ -1192,13 +1317,15 @@ function initEvents() {
     }
   );
 
-  /* Filters */
+
+  /* FILTERS */
 
   $$(".filter-button").forEach(
     (button) => {
       button.addEventListener(
         "click",
         () => {
+
           currentFilter =
             button.dataset.filter ||
             "all";
@@ -1217,7 +1344,8 @@ function initEvents() {
     }
   );
 
-  /* Edit balance */
+
+  /* EDIT BALANCE */
 
   const edit =
     $("#editBalance");
@@ -1229,7 +1357,8 @@ function initEvents() {
     );
   }
 
-  /* New trade */
+
+  /* NEW TRADE */
 
   const newTrade =
     $("#newTrade");
@@ -1241,7 +1370,8 @@ function initEvents() {
     );
   }
 
-  /* Back from add */
+
+  /* BACK */
 
   const back =
     $("#backFromAdd");
@@ -1253,23 +1383,26 @@ function initEvents() {
     );
   }
 
-  /* Journal link */
 
-  const journalLink =
+  /* JOURNAL */
+
+  const journal =
     $("#openJournal");
 
-  if (journalLink) {
-    journalLink.addEventListener(
+  if (journal) {
+    journal.addEventListener(
       "click",
       () => showPage("journal")
     );
   }
 
-  /* Delete buttons */
+
+  /* DELETE */
 
   document.addEventListener(
     "click",
     (event) => {
+
       const button =
         event.target.closest(
           "[data-delete]"
@@ -1283,7 +1416,8 @@ function initEvents() {
     }
   );
 
-  /* Resize chart */
+
+  /* RESIZE */
 
   window.addEventListener(
     "resize",
@@ -1296,12 +1430,13 @@ function initEvents() {
 }
 
 /* =========================
-   INIT
+   START
    ========================= */
 
 document.addEventListener(
   "DOMContentLoaded",
   async () => {
+
     initEvents();
 
     setDirection("BUY");
@@ -1318,5 +1453,6 @@ document.addEventListener(
         "hidden"
       );
     }
+
   }
 );
