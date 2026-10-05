@@ -6,7 +6,6 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-
 app.use(express.static(path.join(__dirname, "web")));
 
 app.get("/", (req, res) => {
@@ -17,17 +16,11 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
-
-/* =========================
-   DATABASE
-========================= */
-
 const db = new sqlite3.Database("./forex_diary.db");
 
-
-/* =========================
-   TABLES
-========================= */
+// =========================
+// ТАБЛИЦА СДЕЛОК
+// =========================
 
 db.run(`
   CREATE TABLE IF NOT EXISTS trades (
@@ -44,28 +37,42 @@ db.run(`
   )
 `);
 
-
-/* Таблица балансов */
+// =========================
+// ТАБЛИЦА БАЛАНСА
+// =========================
 
 db.run(`
   CREATE TABLE IF NOT EXISTS balances (
     user_id TEXT PRIMARY KEY,
-    balance REAL DEFAULT 0
+    balance REAL DEFAULT 10000
   )
 `);
 
+// =========================
+// ПОЛУЧИТЬ ID TELEGRAM
+// =========================
 
-/* =========================
-   GET BALANCE
-========================= */
+function getUserId(req) {
+  return (
+    req.headers["x-telegram-user-id"] ||
+    "demo"
+  );
+}
+
+// =========================
+// ПОЛУЧИТЬ БАЛАНС
+// =========================
 
 app.get("/api/balance", (req, res) => {
 
-  const userId =
-    req.headers["x-telegram-user-id"] || "demo";
+  const userId = getUserId(req);
 
   db.get(
-    "SELECT balance FROM balances WHERE user_id = ?",
+    `
+    SELECT balance
+    FROM balances
+    WHERE user_id = ?
+    `,
     [userId],
     (err, row) => {
 
@@ -75,14 +82,14 @@ app.get("/api/balance", (req, res) => {
         });
       }
 
-      /* Если баланса ещё нет */
       if (!row) {
 
         const defaultBalance = 10000;
 
         db.run(
           `
-          INSERT INTO balances (user_id, balance)
+          INSERT INTO balances
+          (user_id, balance)
           VALUES (?, ?)
           `,
           [userId, defaultBalance],
@@ -110,19 +117,20 @@ app.get("/api/balance", (req, res) => {
   );
 });
 
-
-/* =========================
-   UPDATE BALANCE
-========================= */
+// =========================
+// СОХРАНИТЬ БАЛАНС
+// =========================
 
 app.post("/api/balance", (req, res) => {
 
-  const userId =
-    req.headers["x-telegram-user-id"] || "demo";
+  const userId = getUserId(req);
 
-  const balance = Number(req.body.balance);
+  const balance = Number(
+    req.body.balance
+  );
 
   if (!Number.isFinite(balance)) {
+
     return res.status(400).json({
       error: "Некорректный баланс"
     });
@@ -130,10 +138,14 @@ app.post("/api/balance", (req, res) => {
 
   db.run(
     `
-    INSERT INTO balances (user_id, balance)
+    INSERT INTO balances
+    (user_id, balance)
+
     VALUES (?, ?)
+
     ON CONFLICT(user_id)
-    DO UPDATE SET balance = excluded.balance
+    DO UPDATE SET
+    balance = excluded.balance
     `,
     [userId, balance],
     function (err) {
@@ -146,21 +158,19 @@ app.post("/api/balance", (req, res) => {
 
       res.json({
         ok: true,
-        balance
+        balance: balance
       });
     }
   );
 });
 
-
-/* =========================
-   TRADES
-========================= */
+// =========================
+// ПОЛУЧИТЬ ВСЕ СДЕЛКИ
+// =========================
 
 app.get("/api/trades", (req, res) => {
 
-  const userId =
-    req.headers["x-telegram-user-id"] || "demo";
+  const userId = getUserId(req);
 
   db.all(
     `
@@ -183,15 +193,13 @@ app.get("/api/trades", (req, res) => {
   );
 });
 
-
-/* =========================
-   ADD TRADE
-========================= */
+// =========================
+// ДОБАВИТЬ СДЕЛКУ
+// =========================
 
 app.post("/api/trades", (req, res) => {
 
-  const userId =
-    req.headers["x-telegram-user-id"] || "demo";
+  const userId = getUserId(req);
 
   const {
     pair,
@@ -216,6 +224,7 @@ app.post("/api/trades", (req, res) => {
       result,
       notes
     )
+
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
     [
@@ -244,15 +253,13 @@ app.post("/api/trades", (req, res) => {
   );
 });
 
-
-/* =========================
-   DELETE TRADE
-========================= */
+// =========================
+// УДАЛИТЬ СДЕЛКУ
+// =========================
 
 app.delete("/api/trades/:id", (req, res) => {
 
-  const userId =
-    req.headers["x-telegram-user-id"] || "demo";
+  const userId = getUserId(req);
 
   db.run(
     `
@@ -280,19 +287,18 @@ app.delete("/api/trades/:id", (req, res) => {
   );
 });
 
-
-/* =========================
-   STATISTICS
-========================= */
+// =========================
+// СТАТИСТИКА
+// =========================
 
 app.get("/api/stats", (req, res) => {
 
-  const userId =
-    req.headers["x-telegram-user-id"] || "demo";
+  const userId = getUserId(req);
 
   db.get(
     `
     SELECT
+
       COUNT(*) AS total,
 
       COALESCE(
@@ -303,7 +309,8 @@ app.get("/api/stats", (req, res) => {
       COALESCE(
         SUM(
           CASE
-            WHEN result > 0 THEN 1
+            WHEN result > 0
+            THEN 1
             ELSE 0
           END
         ),
@@ -313,7 +320,8 @@ app.get("/api/stats", (req, res) => {
       COALESCE(
         SUM(
           CASE
-            WHEN result < 0 THEN 1
+            WHEN result < 0
+            THEN 1
             ELSE 0
           END
         ),
@@ -339,33 +347,33 @@ app.get("/api/stats", (req, res) => {
       const wins =
         Number(row.wins) || 0;
 
+      const losses =
+        Number(row.losses) || 0;
+
+      const profit =
+        Number(row.profit) || 0;
+
+      const winrate =
+        total > 0
+          ? Math.round(
+              (wins / total) * 100
+            )
+          : 0;
+
       res.json({
-
         total,
-
-        profit:
-          Number(row.profit) || 0,
-
+        profit,
         wins,
-
-        losses:
-          Number(row.losses) || 0,
-
-        winrate:
-          total
-            ? Math.round(
-                (wins / total) * 100
-              )
-            : 0
+        losses,
+        winrate
       });
     }
   );
 });
 
-
-/* =========================
-   START
-========================= */
+// =========================
+// ЗАПУСК СЕРВЕРА
+// =========================
 
 app.listen(PORT, () => {
 
