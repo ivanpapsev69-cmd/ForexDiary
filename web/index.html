@@ -8,6 +8,8 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   >
 
+  <meta name="theme-color" content="#07111f">
+
   <title>Forex Diary</title>
 
   <link rel="stylesheet" href="style.css">
@@ -26,7 +28,7 @@
     </div>
 
     <div class="loading-subtitle">
-      Trading Journal
+      TRADING JOURNAL
     </div>
 
     <div class="loading-spinner"></div>
@@ -38,24 +40,24 @@
   </div>
 
 
-  <!-- TOP -->
+  <!-- TOP BAR -->
 
   <header class="topbar">
 
-    <div>
+    <div class="brand">
 
       <div class="logo">
         Forex Diary
       </div>
 
       <div class="subtitle">
-        Trading Journal
+        TRADING JOURNAL
       </div>
 
     </div>
 
     <div class="status">
-      ● ONLINE
+      <span>●</span> ONLINE
     </div>
 
   </header>
@@ -66,38 +68,69 @@
   <main>
 
 
-    <!-- ========================= -->
+    <!-- ================================= -->
     <!-- HOME -->
-    <!-- ========================= -->
+    <!-- ================================= -->
 
-    <section
-      id="home"
-      class="page active"
-    >
+    <section id="home" class="page active">
 
-      <h1>
-        Главная
-      </h1>
+      <div class="page-intro">
+
+        <div>
+          <span class="eyebrow">
+            DASHBOARD
+          </span>
+
+          <h1>
+            Главная
+          </h1>
+        </div>
+
+        <div class="date-badge">
+          Сегодня
+        </div>
+
+      </div>
 
 
       <!-- BALANCE -->
 
-      <div class="card balance-card">
+      <div class="hero-balance">
 
-        <div class="balance-label">
-          Баланс
+        <div class="hero-balance-top">
+
+          <span>
+            Текущий баланс
+          </span>
+
+          <button
+            id="editBalance"
+            class="icon-button"
+            type="button"
+          >
+            ✎
+          </button>
+
         </div>
 
-        <span id="balance">
-          $10,000.00
-        </span>
-
-        <button
-          id="editBalance"
-          class="balance-edit"
+        <div
+          id="balance"
+          class="hero-balance-value"
         >
-          Изменить баланс
-        </button>
+          $10,000.00
+        </div>
+
+        <div class="balance-footer">
+
+          <span class="balance-status">
+            ● Trading account
+          </span>
+
+          <span>
+            USD
+          </span>
+
+        </div>
 
       </div>
 
@@ -106,7 +139,11 @@
 
       <div class="dashboard-grid">
 
-        <div class="card">
+        <div class="stat-card">
+
+          <div class="stat-icon blue">
+            ↗
+          </div>
 
           <div class="card-title">
             Сделки
@@ -122,7 +159,11 @@
         </div>
 
 
-        <div class="card">
+        <div class="stat-card">
+
+          <div class="stat-icon green">
+            $
+          </div>
 
           <div class="card-title">
             Результат
@@ -138,7 +179,11 @@
         </div>
 
 
-        <div class="card">
+        <div class="stat-card">
+
+          <div class="stat-icon purple">
+            %
+          </div>
 
           <div class="card-title">
             Winrate
@@ -154,7 +199,11 @@
         </div>
 
 
-        <div class="card">
+        <div class="stat-card">
+
+          <div class="stat-icon orange">
+            ✓
+          </div>
 
           <div class="card-title">
             Статус
@@ -169,93 +218,175 @@
       </div>
 
 
-      <!-- ADD -->
+      <!-- NEW TRADE -->
 
-      <div style="margin-top:10px">
+      <button
+        class="primary-button hero-button"
+        type="button"
+        onclick="showPage('add')"
+      >
+
+        <span class="button-plus">
+          +
+        </span>
+
+        <span>
+          Новая сделка
+        </span>
+
+        <span class="button-arrow">
+          →
+        </span>
+
+      </button>
+
+
+      <!-- RECENT TRADES -->
+
+      <div class="section-header">
+
+        <div>
+
+          <span class="section-kicker">
+            JOURNAL
+          </span>
+
+          <h2>
+            Последние сделки
+          </h2>
+
+        </div>
 
         <button
-          class="primary-button"
-          onclick="showPage('add')"
+          type="button"
+          class="text-button"
+          onclick="showPage('journal')"
         >
-          + Добавить сделку
+          Все →
         </button>
 
       </div>
 
 
-      <!-- LAST TRADES -->
+      <div id="homeTradesList">
 
-      <div class="section-header">
-
-        <h2>
-          Последние сделки
-        </h2>
-
-        <span>
-          3 последних
-        </span>
+        <div class="empty">
+          Сделок пока нет
+        </div>
 
       </div>
-
-
-      <div id="homeTradesList"></div>
 
     </section>
 
 
 
-    <!-- ========================= -->
+    <!-- ================================= -->
     <!-- ADD TRADE -->
-    <!-- ========================= -->
+    <!-- ================================= -->
 
-    <section
-      id="add"
-      class="page"
-    >
+    <section id="add" class="page">
 
-      <h1>
-        Новая сделка
-      </h1>
+      <div class="page-intro">
+
+        <div>
+
+          <span class="eyebrow">
+            TRADE ENTRY
+          </span>
+
+          <h1>
+            Новая сделка
+          </h1>
+
+        </div>
+
+      </div>
 
 
       <form
         id="tradeForm"
-        class="card form-card"
+        class="form-card"
       >
 
-        <h2>
-          Данные сделки
-        </h2>
+        <div class="form-section-title">
+          Основные данные
+        </div>
 
 
         <!-- PAIR -->
 
-        <div>
+        <div class="form-group">
 
           <label for="pair">
             Валютная пара
           </label>
 
-          <input
-            id="pair"
-            type="text"
-            placeholder="EUR/USD"
-            autocomplete="off"
-            required
-          >
+          <div class="input-wrap">
+
+            <span class="input-icon">
+              ◎
+            </span>
+
+            <input
+              id="pair"
+              type="text"
+              placeholder="EUR/USD"
+              autocomplete="off"
+              required
+            >
+
+          </div>
 
         </div>
 
 
         <!-- DIRECTION -->
 
-        <div>
+        <div class="form-group">
 
-          <label for="direction">
+          <label>
             Направление
           </label>
 
-          <select id="direction">
+          <div class="direction-selector">
+
+            <label class="direction-option buy-option">
+
+              <input
+                type="radio"
+                name="trade-direction"
+                value="BUY"
+                checked
+              >
+
+              <span>
+                BUY
+              </span>
+
+            </label>
+
+
+            <label class="direction-option sell-option">
+
+              <input
+                type="radio"
+                name="trade-direction"
+                value="SELL"
+              >
+
+              <span>
+                SELL
+              </span>
+
+            </label>
+
+          </div>
+
+
+          <select
+            id="direction"
+            class="hidden-select"
+          >
 
             <option value="BUY">
               BUY
@@ -270,82 +401,86 @@
         </div>
 
 
-        <!-- ENTRY -->
+        <!-- ENTRY / SL -->
 
-        <div>
+        <div class="form-row">
 
-          <label for="entry">
-            Entry
-          </label>
+          <div class="form-group">
 
-          <input
-            id="entry"
-            type="number"
-            step="any"
-            placeholder="1.08500"
-          >
+            <label for="entry">
+              Entry
+            </label>
 
-        </div>
+            <input
+              id="entry"
+              type="number"
+              step="any"
+              placeholder="1.08500"
+            >
 
-
-        <!-- SL -->
-
-        <div>
-
-          <label for="stop_loss">
-            Stop Loss
-          </label>
-
-          <input
-            id="stop_loss"
-            type="number"
-            step="any"
-            placeholder="1.08200"
-          >
-
-        </div>
+          </div>
 
 
-        <!-- TP -->
+          <div class="form-group">
 
-        <div>
+            <label for="stop_loss">
+              Stop Loss
+            </label>
 
-          <label for="take_profit">
-            Take Profit
-          </label>
+            <input
+              id="stop_loss"
+              type="number"
+              step="any"
+              placeholder="1.08200"
+            >
 
-          <input
-            id="take_profit"
-            type="number"
-            step="any"
-            placeholder="1.09100"
-          >
+          </div>
 
         </div>
 
 
-        <!-- RESULT -->
+        <!-- TP / RESULT -->
 
-        <div>
+        <div class="form-row">
 
-          <label for="result">
-            Результат, $
-          </label>
+          <div class="form-group">
 
-          <input
-            id="result"
-            type="number"
-            step="0.01"
-            placeholder="100"
-            required
-          >
+            <label for="take_profit">
+              Take Profit
+            </label>
+
+            <input
+              id="take_profit"
+              type="number"
+              step="any"
+              placeholder="1.09100"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="result">
+              Результат, $
+            </label>
+
+            <input
+              id="result"
+              type="number"
+              step="0.01"
+              placeholder="100"
+              required
+            >
+
+          </div>
 
         </div>
 
 
         <!-- NOTES -->
 
-        <div>
+        <div class="form-group">
 
           <label for="notes">
             Заметки
@@ -363,29 +498,65 @@
           type="submit"
           class="primary-button"
         >
-          Сохранить сделку
+
+          <span>
+            Сохранить сделку
+          </span>
+
+          <span>
+            →
+          </span>
+
         </button>
 
       </form>
+
+
+      <div class="form-tip">
+
+        <span>💡</span>
+
+        <div>
+          <b>Совет</b>
+          <p>
+            Записывай причину входа сразу после сделки.
+            Это поможет находить повторяющиеся ошибки.
+          </p>
+        </div>
+
+      </div>
 
     </section>
 
 
 
-    <!-- ========================= -->
+    <!-- ================================= -->
     <!-- JOURNAL -->
-    <!-- ========================= -->
+    <!-- ================================= -->
 
-    <section
-      id="journal"
-      class="page"
-    >
+    <section id="journal" class="page">
 
-      <div class="journal-head">
+      <div class="page-intro">
 
-        <h1>
-          Журнал
-        </h1>
+        <div>
+
+          <span class="eyebrow">
+            TRADING HISTORY
+          </span>
+
+          <h1>
+            Сделки
+          </h1>
+
+        </div>
+
+        <button
+          class="small-add"
+          type="button"
+          onclick="showPage('add')"
+        >
+          + Сделка
+        </button>
 
       </div>
 
@@ -428,31 +599,23 @@
 
         <div class="summary-item">
 
-          <div class="summary-label">
-            СДЕЛКИ
-          </div>
+          <span class="summary-icon">
+            #
+          </span>
 
-          <div
-            id="journalTotal"
-            class="summary-value"
-          >
-            0
-          </div>
+          <div>
 
-        </div>
+            <div class="summary-label">
+              СДЕЛКИ
+            </div>
 
+            <div
+              id="journalTotal"
+              class="summary-value"
+            >
+              0
+            </div>
 
-        <div class="summary-item">
-
-          <div class="summary-label">
-            РЕЗУЛЬТАТ
-          </div>
-
-          <div
-            id="journalProfit"
-            class="summary-value profit"
-          >
-            +$0.00
           </div>
 
         </div>
@@ -460,15 +623,47 @@
 
         <div class="summary-item">
 
-          <div class="summary-label">
-            WINRATE
+          <span class="summary-icon green">
+            $
+          </span>
+
+          <div>
+
+            <div class="summary-label">
+              РЕЗУЛЬТАТ
+            </div>
+
+            <div
+              id="journalProfit"
+              class="summary-value profit"
+            >
+              +$0.00
+            </div>
+
           </div>
 
-          <div
-            id="journalWinrate"
-            class="summary-value"
-          >
-            0%
+        </div>
+
+
+        <div class="summary-item">
+
+          <span class="summary-icon purple">
+            %
+          </span>
+
+          <div>
+
+            <div class="summary-label">
+              WINRATE
+            </div>
+
+            <div
+              id="journalWinrate"
+              class="summary-value"
+            >
+              0%
+            </div>
+
           </div>
 
         </div>
@@ -490,19 +685,14 @@
 
 
 
-    <!-- ========================= -->
+    <!-- ================================= -->
     <!-- ANALYTICS -->
-    <!-- ========================= -->
+    <!-- ================================= -->
 
-    <section
-      id="stats"
-      class="page"
-    >
+    <section id="stats" class="page">
 
       <div class="analytics-section">
 
-
-        <!-- HEADER -->
 
         <div class="analytics-title-row">
 
@@ -525,13 +715,11 @@
         </div>
 
 
-
         <!-- MAIN METRICS -->
 
         <div class="analytics-grid">
 
-
-          <div class="analytics-card">
+          <div class="analytics-card featured">
 
             <span>
               Общая прибыль
@@ -543,6 +731,10 @@
             >
               +$0.00
             </b>
+
+            <small>
+              Net P/L
+            </small>
 
           </div>
 
@@ -556,6 +748,10 @@
             <b id="aWinrate">
               0%
             </b>
+
+            <small>
+              Win ratio
+            </small>
 
           </div>
 
@@ -573,6 +769,10 @@
               +$0.00
             </b>
 
+            <small>
+              Average win
+            </small>
+
           </div>
 
 
@@ -589,6 +789,10 @@
               -$0.00
             </b>
 
+            <small>
+              Average loss
+            </small>
+
           </div>
 
 
@@ -601,6 +805,10 @@
             <b id="aProfitFactor">
               0.00
             </b>
+
+            <small>
+              Risk efficiency
+            </small>
 
           </div>
 
@@ -615,10 +823,13 @@
               +$0.00
             </b>
 
+            <small>
+              Per trade
+            </small>
+
           </div>
 
         </div>
-
 
 
         <!-- EQUITY -->
@@ -627,9 +838,17 @@
 
           <div class="panel-head">
 
-            <h3>
-              Кривая капитала
-            </h3>
+            <div>
+
+              <span class="panel-kicker">
+                PERFORMANCE
+              </span>
+
+              <h3>
+                Кривая капитала
+              </h3>
+
+            </div>
 
             <span>
               по сделкам
@@ -652,26 +871,28 @@
         </div>
 
 
-
         <!-- BEST / WORST -->
 
         <div class="analytics-panel">
 
           <div class="panel-head">
 
-            <h3>
-              Лучшие показатели
-            </h3>
+            <div>
 
-            <span>
-              результаты
-            </span>
+              <span class="panel-kicker">
+                PERFORMANCE
+              </span>
+
+              <h3>
+                Лучшие показатели
+              </h3>
+
+            </div>
 
           </div>
 
 
           <div class="metric-list">
-
 
             <div>
 
@@ -735,16 +956,23 @@
         </div>
 
 
-
         <!-- PAIRS -->
 
         <div class="analytics-panel">
 
           <div class="panel-head">
 
-            <h3>
-              По валютным парам
-            </h3>
+            <div>
+
+              <span class="panel-kicker">
+                MARKET
+              </span>
+
+              <h3>
+                По валютным парам
+              </h3>
+
+            </div>
 
             <span>
               результат
@@ -767,16 +995,23 @@
         </div>
 
 
-
         <!-- DAILY -->
 
         <div class="analytics-panel">
 
           <div class="panel-head">
 
-            <h3>
-              Последние дни
-            </h3>
+            <div>
+
+              <span class="panel-kicker">
+                HISTORY
+              </span>
+
+              <h3>
+                Последние дни
+              </h3>
+
+            </div>
 
             <span>
               результат
@@ -798,6 +1033,206 @@
 
         </div>
 
+      </div>
+
+    </section>
+
+
+
+    <!-- ================================= -->
+    <!-- PROFILE -->
+    <!-- ================================= -->
+
+    <section id="profile" class="page">
+
+      <div class="page-intro">
+
+        <div>
+
+          <span class="eyebrow">
+            ACCOUNT
+          </span>
+
+          <h1>
+            Профиль
+          </h1>
+
+        </div>
+
+      </div>
+
+
+      <!-- PROFILE CARD -->
+
+      <div class="profile-card">
+
+        <div class="profile-avatar">
+          FD
+        </div>
+
+        <div class="profile-info">
+
+          <div class="profile-name">
+            Forex Trader
+          </div>
+
+          <div class="profile-subtitle">
+            Trading Journal
+          </div>
+
+        </div>
+
+        <div class="profile-online">
+          ●
+        </div>
+
+      </div>
+
+
+      <!-- ACCOUNT -->
+
+      <div class="profile-section">
+
+        <div class="profile-section-title">
+          Аккаунт
+        </div>
+
+
+        <div class="profile-row">
+
+          <div>
+
+            <span class="profile-row-title">
+              Валюта счёта
+            </span>
+
+            <span class="profile-row-subtitle">
+              Основная валюта журнала
+            </span>
+
+          </div>
+
+          <b>
+            USD
+          </b>
+
+        </div>
+
+
+        <div class="profile-row">
+
+          <div>
+
+            <span class="profile-row-title">
+              Тип журнала
+            </span>
+
+            <span class="profile-row-subtitle">
+              Forex Trading
+            </span>
+
+          </div>
+
+          <b>
+            Forex
+          </b>
+
+        </div>
+
+
+        <div class="profile-row">
+
+          <div>
+
+            <span class="profile-row-title">
+              Статус
+            </span>
+
+            <span class="profile-row-subtitle">
+              Синхронизация активна
+            </span>
+
+          </div>
+
+          <b class="profit">
+            ONLINE
+          </b>
+
+        </div>
+
+      </div>
+
+
+      <!-- APP -->
+
+      <div class="profile-section">
+
+        <div class="profile-section-title">
+          Приложение
+        </div>
+
+
+        <div class="profile-row">
+
+          <div>
+
+            <span class="profile-row-title">
+              Forex Diary
+            </span>
+
+            <span class="profile-row-subtitle">
+              Trading Journal
+            </span>
+
+          </div>
+
+          <b>
+            v1.0
+          </b>
+
+        </div>
+
+
+        <div class="profile-row">
+
+          <div>
+
+            <span class="profile-row-title">
+              Хранение данных
+            </span>
+
+            <span class="profile-row-subtitle">
+              Данные сохраняются автоматически
+            </span>
+
+          </div>
+
+          <b class="profit">
+            ✓
+          </b>
+
+        </div>
+
+      </div>
+
+
+      <div class="profile-tip">
+
+        <div class="profile-tip-icon">
+          ✓
+        </div>
+
+        <div>
+
+          <b>
+            Торгуй по системе
+          </b>
+
+          <p>
+            Записывай каждую сделку и анализируй статистику.
+          </p>
+
+        </div>
 
       </div>
 
@@ -807,21 +1242,24 @@
 
 
 
-  <!-- ========================= -->
+  <!-- ================================= -->
   <!-- BOTTOM NAV -->
-  <!-- ========================= -->
+  <!-- ================================= -->
 
   <nav class="bottom-nav">
-
 
     <button
       class="active"
       data-page="home"
     >
 
-      🏠<br>
+      <span class="nav-icon">
+        ⌂
+      </span>
 
-      Главная
+      <span>
+        Главная
+      </span>
 
     </button>
 
@@ -830,9 +1268,13 @@
       data-page="journal"
     >
 
-      📒<br>
+      <span class="nav-icon">
+        ≡
+      </span>
 
-      Журнал
+      <span>
+        Сделки
+      </span>
 
     </button>
 
@@ -841,16 +1283,36 @@
       data-page="stats"
     >
 
-      📊<br>
+      <span class="nav-icon">
+        ◒
+      </span>
 
-      Аналитика
+      <span>
+        Аналитика
+      </span>
 
     </button>
 
 
+    <button
+      data-page="profile"
+    >
+
+      <span class="nav-icon">
+        ◉
+      </span>
+
+      <span>
+        Профиль
+      </span>
+
+    </button>
+
   </nav>
 
 
+
+  <!-- APP -->
 
   <script src="app.js"></script>
 
