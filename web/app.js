@@ -7,7 +7,17 @@ if (tg) {
 
 const API = "/api";
 
+let profitChart = null;
+let resultChart = null;
+let chartsLoaded = false;
+
+
+// ========================================
+// HEADERS
+// ========================================
+
 function getHeaders() {
+
   const headers = {
     "Content-Type": "application/json"
   };
@@ -24,20 +34,65 @@ function getHeaders() {
   return headers;
 }
 
+
+// ========================================
+// MONEY
+// ========================================
+
 function formatMoney(value) {
+
   return (
     "$" +
-    Number(value || 0).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
+    Number(value || 0).toLocaleString(
+      "en-US",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }
+    )
   );
 }
 
 
-// =========================
-// ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ
-// =========================
+// ========================================
+// LOAD CHART.JS
+// ========================================
+
+function loadChartLibrary() {
+
+  return new Promise((resolve, reject) => {
+
+    if (window.Chart) {
+      resolve();
+      return;
+    }
+
+    const script =
+      document.createElement("script");
+
+    script.src =
+      "https://cdn.jsdelivr.net/npm/chart.js";
+
+    script.onload = () => {
+      resolve();
+    };
+
+    script.onerror = () => {
+      reject(
+        new Error(
+          "Не удалось загрузить Chart.js"
+        )
+      );
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+
+// ========================================
+// PAGE NAVIGATION
+// ========================================
 
 function showPage(page) {
 
@@ -54,34 +109,44 @@ function showPage(page) {
     target.classList.add("active");
   }
 
+
   if (page === "home") {
+
     loadBalance();
     loadHomeStats();
     loadHomeTrades();
   }
 
+
   if (page === "journal") {
+
     loadTrades();
   }
 
+
   if (page === "stats") {
+
     loadStats();
+    loadCharts();
   }
 }
 
 
-// =========================
-// БАЛАНС
-// =========================
+// ========================================
+// BALANCE
+// ========================================
 
 async function loadBalance() {
 
   try {
 
     const response =
-      await fetch(`${API}/balance`, {
-        headers: getHeaders()
-      });
+      await fetch(
+        `${API}/balance`,
+        {
+          headers: getHeaders()
+        }
+      );
 
     if (!response.ok) {
       throw new Error(
@@ -96,9 +161,12 @@ async function loadBalance() {
       Number(data.balance) || 0;
 
     const element =
-      document.getElementById("balance");
+      document.getElementById(
+        "balance"
+      );
 
     if (element) {
+
       element.textContent =
         formatMoney(balance);
     }
@@ -110,14 +178,16 @@ async function loadBalance() {
 }
 
 
-// =========================
-// ИЗМЕНИТЬ БАЛАНС
-// =========================
+// ========================================
+// CHANGE BALANCE
+// ========================================
 
 async function changeBalance() {
 
   const element =
-    document.getElementById("balance");
+    document.getElementById(
+      "balance"
+    );
 
   const currentText =
     element
@@ -131,15 +201,18 @@ async function changeBalance() {
         .replace(/,/g, "")
     ) || 0;
 
+
   const input =
     prompt(
       "Введите новый баланс:",
       currentBalance
     );
 
+
   if (input === null) {
     return;
   }
+
 
   const newBalance =
     Number(
@@ -148,6 +221,7 @@ async function changeBalance() {
         .replace("$", "")
         .trim()
     );
+
 
   if (!Number.isFinite(newBalance)) {
 
@@ -158,37 +232,49 @@ async function changeBalance() {
     return;
   }
 
+
   try {
 
     const response =
-      await fetch(`${API}/balance`, {
+      await fetch(
+        `${API}/balance`,
+        {
+          method: "POST",
 
-        method: "POST",
+          headers: getHeaders(),
 
-        headers: getHeaders(),
+          body: JSON.stringify({
+            balance: newBalance
+          })
+        }
+      );
 
-        body: JSON.stringify({
-          balance: newBalance
-        })
-      });
 
     if (!response.ok) {
+
       throw new Error(
         "Ошибка сохранения баланса"
       );
     }
 
+
     const data =
       await response.json();
 
+
     if (element) {
+
       element.textContent =
-        formatMoney(data.balance);
+        formatMoney(
+          data.balance
+        );
     }
+
 
     alert(
       "Баланс сохранён!"
     );
+
 
   } catch (error) {
 
@@ -201,34 +287,48 @@ async function changeBalance() {
 }
 
 
-// =========================
-// ДОБАВИТЬ СДЕЛКУ
-// =========================
+// ========================================
+// ADD TRADE
+// ========================================
 
 async function addTrade() {
 
   const trade = {
 
     pair:
-      document.getElementById("pair").value,
+      document.getElementById(
+        "pair"
+      ).value,
 
     direction:
-      document.getElementById("direction").value,
+      document.getElementById(
+        "direction"
+      ).value,
 
     entry:
-      document.getElementById("entry").value,
+      document.getElementById(
+        "entry"
+      ).value,
 
     stop_loss:
-      document.getElementById("stop_loss").value,
+      document.getElementById(
+        "stop_loss"
+      ).value,
 
     take_profit:
-      document.getElementById("take_profit").value,
+      document.getElementById(
+        "take_profit"
+      ).value,
 
     result:
-      document.getElementById("result").value,
+      document.getElementById(
+        "result"
+      ).value,
 
     notes:
-      document.getElementById("notes").value
+      document.getElementById(
+        "notes"
+      ).value
   };
 
 
@@ -245,14 +345,18 @@ async function addTrade() {
   try {
 
     const response =
-      await fetch(`${API}/trades`, {
+      await fetch(
+        `${API}/trades`,
+        {
+          method: "POST",
 
-        method: "POST",
+          headers: getHeaders(),
 
-        headers: getHeaders(),
-
-        body: JSON.stringify(trade)
-      });
+          body: JSON.stringify(
+            trade
+          )
+        }
+      );
 
 
     if (!response.ok) {
@@ -307,18 +411,21 @@ async function addTrade() {
 }
 
 
-// =========================
-// ЗАГРУЗИТЬ СДЕЛКИ
-// =========================
+// ========================================
+// LOAD TRADES
+// ========================================
 
 async function loadTrades() {
 
   const container =
-    document.getElementById("trades");
+    document.getElementById(
+      "trades"
+    );
 
   if (!container) {
     return;
   }
+
 
   container.innerHTML =
     "Загрузка...";
@@ -327,9 +434,12 @@ async function loadTrades() {
   try {
 
     const response =
-      await fetch(`${API}/trades`, {
-        headers: getHeaders()
-      });
+      await fetch(
+        `${API}/trades`,
+        {
+          headers: getHeaders()
+        }
+      );
 
 
     if (!response.ok) {
@@ -354,7 +464,8 @@ async function loadTrades() {
 
 
     container.innerHTML =
-      trades.map((trade) => `
+      trades.map(
+        (trade) => `
 
         <div class="trade">
 
@@ -378,7 +489,9 @@ async function loadTrades() {
 
           <div>
             Результат:
-            ${formatMoney(trade.result)}
+            ${formatMoney(
+              trade.result
+            )}
           </div>
 
           <div>
@@ -387,7 +500,8 @@ async function loadTrades() {
 
         </div>
 
-      `).join("");
+      `
+      ).join("");
 
 
   } catch (error) {
@@ -400,18 +514,21 @@ async function loadTrades() {
 }
 
 
-// =========================
-// СТАТИСТИКА
-// =========================
+// ========================================
+// LOAD STATS
+// ========================================
 
 async function loadStats() {
 
   try {
 
     const response =
-      await fetch(`${API}/stats`, {
-        headers: getHeaders()
-      });
+      await fetch(
+        `${API}/stats`,
+        {
+          headers: getHeaders()
+        }
+      );
 
 
     if (!response.ok) {
@@ -427,42 +544,63 @@ async function loadStats() {
 
 
     const total =
-      document.getElementById("total");
+      document.getElementById(
+        "total"
+      );
 
     const profit =
-      document.getElementById("profit");
+      document.getElementById(
+        "profit"
+      );
 
     const wins =
-      document.getElementById("wins");
+      document.getElementById(
+        "wins"
+      );
 
     const losses =
-      document.getElementById("losses");
+      document.getElementById(
+        "losses"
+      );
 
     const winrate =
-      document.getElementById("winrate");
+      document.getElementById(
+        "winrate"
+      );
 
 
     if (total) {
+
       total.textContent =
         stats.total || 0;
     }
 
+
     if (profit) {
+
       profit.textContent =
-        formatMoney(stats.profit);
+        formatMoney(
+          stats.profit
+        );
     }
 
+
     if (wins) {
+
       wins.textContent =
         stats.wins || 0;
     }
 
+
     if (losses) {
+
       losses.textContent =
         stats.losses || 0;
     }
 
+
     if (winrate) {
+
       winrate.textContent =
         `${stats.winrate || 0}%`;
     }
@@ -475,18 +613,21 @@ async function loadStats() {
 }
 
 
-// =========================
-// СТАТИСТИКА ГЛАВНОЙ
-// =========================
+// ========================================
+// HOME STATS
+// ========================================
 
 async function loadHomeStats() {
 
   try {
 
     const response =
-      await fetch(`${API}/stats`, {
-        headers: getHeaders()
-      });
+      await fetch(
+        `${API}/stats`,
+        {
+          headers: getHeaders()
+        }
+      );
 
 
     if (!response.ok) {
@@ -520,7 +661,9 @@ async function loadHomeStats() {
     if (profit) {
 
       profit.textContent =
-        formatMoney(stats.profit);
+        formatMoney(
+          stats.profit
+        );
     }
 
 
@@ -545,9 +688,9 @@ async function loadHomeStats() {
 }
 
 
-// =========================
-// ПОСЛЕДНИЕ СДЕЛКИ
-// =========================
+// ========================================
+// HOME TRADES
+// ========================================
 
 async function loadHomeTrades() {
 
@@ -555,6 +698,7 @@ async function loadHomeTrades() {
     document.getElementById(
       "homeTradesList"
     );
+
 
   if (!container) {
     return;
@@ -564,9 +708,12 @@ async function loadHomeTrades() {
   try {
 
     const response =
-      await fetch(`${API}/trades`, {
-        headers: getHeaders()
-      });
+      await fetch(
+        `${API}/trades`,
+        {
+          headers: getHeaders()
+        }
+      );
 
 
     if (!response.ok) {
@@ -595,7 +742,8 @@ async function loadHomeTrades() {
 
 
     container.innerHTML =
-      latestTrades.map((trade) => `
+      latestTrades.map(
+        (trade) => `
 
         <div class="trade">
 
@@ -607,12 +755,15 @@ async function loadHomeTrades() {
 
           <div>
             Результат:
-            ${formatMoney(trade.result)}
+            ${formatMoney(
+              trade.result
+            )}
           </div>
 
         </div>
 
-      `).join("");
+      `
+      ).join("");
 
 
   } catch (error) {
@@ -625,8 +776,432 @@ async function loadHomeTrades() {
 }
 
 
-// =========================
-// ЗАПУСК
-// =========================
+// ========================================
+// CREATE CHART AREA
+// ========================================
+
+function createChartArea() {
+
+  const statsPage =
+    document.getElementById(
+      "stats"
+    );
+
+  if (!statsPage) {
+    return null;
+  }
+
+
+  let charts =
+    document.getElementById(
+      "chartsContainer"
+    );
+
+
+  if (charts) {
+    return charts;
+  }
+
+
+  charts =
+    document.createElement(
+      "div"
+    );
+
+  charts.id =
+    "chartsContainer";
+
+
+  charts.innerHTML = `
+
+    <div class="chart-card">
+
+      <div class="chart-title">
+        Прибыль по сделкам
+      </div>
+
+      <div class="chart-subtitle">
+        Накопленный результат
+      </div>
+
+      <div class="chart-wrapper">
+        <canvas
+          id="profitChart">
+        </canvas>
+      </div>
+
+    </div>
+
+
+    <div class="chart-card">
+
+      <div class="chart-title">
+        Результаты сделок
+      </div>
+
+      <div class="chart-subtitle">
+        Прибыльные и убыточные
+      </div>
+
+      <div class="chart-wrapper chart-small">
+        <canvas
+          id="resultChart">
+        </canvas>
+      </div>
+
+    </div>
+
+  `;
+
+
+  const grid =
+    statsPage.querySelector(
+      ".stats-grid"
+    );
+
+
+  if (grid) {
+
+    grid.after(charts);
+
+  } else {
+
+    statsPage.appendChild(
+      charts
+    );
+  }
+
+
+  return charts;
+}
+
+
+// ========================================
+// LOAD CHARTS
+// ========================================
+
+async function loadCharts() {
+
+  try {
+
+    await loadChartLibrary();
+
+
+    const response =
+      await fetch(
+        `${API}/trades`,
+        {
+          headers: getHeaders()
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Ошибка загрузки сделок"
+      );
+    }
+
+
+    const trades =
+      await response.json();
+
+
+    createChartArea();
+
+
+    const profitCanvas =
+      document.getElementById(
+        "profitChart"
+      );
+
+    const resultCanvas =
+      document.getElementById(
+        "resultChart"
+      );
+
+
+    if (!profitCanvas ||
+        !resultCanvas) {
+
+      return;
+    }
+
+
+    // ====================================
+    // SORT TRADES
+    // ====================================
+
+    const sortedTrades =
+      [...trades].sort(
+        (a, b) =>
+          new Date(a.created_at) -
+          new Date(b.created_at)
+      );
+
+
+    // ====================================
+    // CUMULATIVE PROFIT
+    // ====================================
+
+    let cumulative = 0;
+
+    const labels = [];
+
+    const profitData = [];
+
+
+    sortedTrades.forEach(
+      (trade, index) => {
+
+        cumulative +=
+          Number(
+            trade.result
+          ) || 0;
+
+        labels.push(
+          `#${index + 1}`
+        );
+
+        profitData.push(
+          Number(
+            cumulative.toFixed(2)
+          )
+        );
+      }
+    );
+
+
+    if (profitChart) {
+
+      profitChart.destroy();
+    }
+
+
+    profitChart =
+      new Chart(
+        profitCanvas,
+        {
+          type: "line",
+
+          data: {
+
+            labels,
+
+            datasets: [
+              {
+                label:
+                  "Прибыль",
+
+                data:
+                  profitData,
+
+                borderColor:
+                  "#22d993",
+
+                backgroundColor:
+                  "rgba(34,217,147,0.10)",
+
+                borderWidth: 2,
+
+                fill: true,
+
+                tension: 0.35,
+
+                pointRadius: 3,
+
+                pointBackgroundColor:
+                  "#22d993"
+              }
+            ]
+          },
+
+          options: {
+
+            responsive: true,
+
+            maintainAspectRatio:
+              false,
+
+            plugins: {
+
+              legend: {
+                display: false
+              },
+
+              tooltip: {
+
+                callbacks: {
+
+                  label:
+                    function(context) {
+
+                      return (
+                        " " +
+                        formatMoney(
+                          context.parsed.y
+                        )
+                      );
+                    }
+                }
+              }
+            },
+
+            scales: {
+
+              x: {
+
+                grid: {
+                  display: false
+                },
+
+                ticks: {
+                  color:
+                    "#66738a"
+                }
+              },
+
+              y: {
+
+                grid: {
+                  color:
+                    "rgba(255,255,255,0.05)"
+                },
+
+                ticks: {
+
+                  color:
+                    "#66738a",
+
+                  callback:
+                    function(value) {
+
+                      return "$" + value;
+                    }
+                }
+              }
+            }
+          }
+        }
+      );
+
+
+    // ====================================
+    // WIN / LOSS
+    // ====================================
+
+    const wins =
+      trades.filter(
+        trade =>
+          Number(trade.result) > 0
+      ).length;
+
+
+    const losses =
+      trades.filter(
+        trade =>
+          Number(trade.result) < 0
+      ).length;
+
+
+    const breakeven =
+      trades.filter(
+        trade =>
+          Number(trade.result) === 0
+      ).length;
+
+
+    if (resultChart) {
+
+      resultChart.destroy();
+    }
+
+
+    resultChart =
+      new Chart(
+        resultCanvas,
+        {
+
+          type: "doughnut",
+
+          data: {
+
+            labels: [
+              "Прибыльные",
+              "Убыточные",
+              "В ноль"
+            ],
+
+            datasets: [
+              {
+                data: [
+                  wins,
+                  losses,
+                  breakeven
+                ],
+
+                backgroundColor: [
+                  "#22d993",
+                  "#ff5573",
+                  "#66738a"
+                ],
+
+                borderWidth: 0,
+
+                hoverOffset: 5
+              }
+            ]
+          },
+
+          options: {
+
+            responsive: true,
+
+            maintainAspectRatio:
+              false,
+
+            cutout: "68%",
+
+            plugins: {
+
+              legend: {
+
+                position:
+                  "bottom",
+
+                labels: {
+
+                  color:
+                    "#f5f7ff",
+
+                  padding: 16,
+
+                  usePointStyle:
+                    true
+                }
+              }
+            }
+          }
+        }
+      );
+
+
+    chartsLoaded = true;
+
+
+  } catch (error) {
+
+    console.error(
+      "Ошибка графиков:",
+      error
+    );
+  }
+}
+
+
+// ========================================
+// START
+// ========================================
 
 showPage("home");
