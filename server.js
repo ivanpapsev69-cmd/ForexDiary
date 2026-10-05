@@ -5,12 +5,6 @@ const sqlite3 = require("sqlite3").verbose();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-/*
-  На Deplexo рабочая директория может быть недоступна
-  для записи. /tmp обычно доступна.
-*/
-const DB_PATH = "/tmp/forex_diary.db";
-
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "web")));
 
@@ -21,6 +15,9 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
+
+/* SQLITE */
+const DB_PATH = "/data/forex_diary.db";
 
 console.log("Opening SQLite:", DB_PATH);
 
@@ -66,7 +63,11 @@ app.get("/api/balance", (req, res) => {
   const userId = getUserId(req);
 
   db.get(
-    `SELECT balance FROM balances WHERE user_id = ?`,
+    `
+    SELECT balance
+    FROM balances
+    WHERE user_id = ?
+    `,
     [userId],
     (err, row) => {
       if (err) {
@@ -125,10 +126,11 @@ app.post("/api/balance", (req, res) => {
     (user_id, balance)
     VALUES (?, ?)
     ON CONFLICT(user_id)
-    DO UPDATE SET balance = excluded.balance
+    DO UPDATE SET
+    balance = excluded.balance
     `,
     [userId, balance],
-    (err) => {
+    function (err) {
       if (err) {
         return res.status(500).json({
           error: err.message
@@ -239,7 +241,9 @@ app.post("/api/trades", (req, res) => {
             }
 
             const currentBalance =
-              row ? Number(row.balance) : 10000;
+              row
+                ? Number(row.balance)
+                : 10000;
 
             const newBalance =
               currentBalance + tradeResult;
@@ -250,7 +254,8 @@ app.post("/api/trades", (req, res) => {
               (user_id, balance)
               VALUES (?, ?)
               ON CONFLICT(user_id)
-              DO UPDATE SET balance = excluded.balance
+              DO UPDATE SET
+              balance = excluded.balance
               `,
               [userId, newBalance],
               (updateErr) => {
@@ -332,7 +337,9 @@ app.delete("/api/trades/:id", (req, res) => {
             }
 
             const currentBalance =
-              row ? Number(row.balance) : 10000;
+              row
+                ? Number(row.balance)
+                : 10000;
 
             const newBalance =
               currentBalance - tradeResult;
@@ -359,7 +366,8 @@ app.delete("/api/trades/:id", (req, res) => {
                   (user_id, balance)
                   VALUES (?, ?)
                   ON CONFLICT(user_id)
-                  DO UPDATE SET balance = excluded.balance
+                  DO UPDATE SET
+                  balance = excluded.balance
                   `,
                   [userId, newBalance],
                   (updateErr) => {
@@ -398,15 +406,32 @@ app.get("/api/stats", (req, res) => {
     `
     SELECT
       COUNT(*) AS total,
-      COALESCE(SUM(result), 0) AS profit,
+
       COALESCE(
-        SUM(CASE WHEN result > 0 THEN 1 ELSE 0 END),
+        SUM(result),
+        0
+      ) AS profit,
+
+      COALESCE(
+        SUM(
+          CASE
+            WHEN result > 0 THEN 1
+            ELSE 0
+          END
+        ),
         0
       ) AS wins,
+
       COALESCE(
-        SUM(CASE WHEN result < 0 THEN 1 ELSE 0 END),
+        SUM(
+          CASE
+            WHEN result < 0 THEN 1
+            ELSE 0
+          END
+        ),
         0
       ) AS losses
+
     FROM trades
     WHERE user_id = ?
     `,
@@ -439,8 +464,7 @@ app.get("/api/stats", (req, res) => {
   );
 });
 
+/* START SERVER */
 app.listen(PORT, () => {
-  console.log(
-    `Forex Diary running on port ${PORT}`
-  );
+  console.log(`Forex Diary running on port ${PORT}`);
 });
