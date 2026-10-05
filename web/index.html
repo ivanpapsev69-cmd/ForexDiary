@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -42,6 +43,7 @@
   <header class="topbar">
 
     <div>
+
       <div class="logo">
         Forex Diary
       </div>
@@ -49,6 +51,7 @@
       <div class="subtitle">
         Trading Journal
       </div>
+
     </div>
 
     <div class="status">
@@ -63,7 +66,9 @@
   <main>
 
 
+    <!-- ========================= -->
     <!-- HOME -->
+    <!-- ========================= -->
 
     <section
       id="home"
@@ -199,7 +204,9 @@
 
 
 
+    <!-- ========================= -->
     <!-- ADD TRADE -->
+    <!-- ========================= -->
 
     <section
       id="add"
@@ -365,7 +372,9 @@
 
 
 
+    <!-- ========================= -->
     <!-- JOURNAL -->
+    <!-- ========================= -->
 
     <section
       id="journal"
@@ -481,125 +490,314 @@
 
 
 
-    <!-- STATS -->
+    <!-- ========================= -->
+    <!-- ANALYTICS -->
+    <!-- ========================= -->
 
     <section
       id="stats"
       class="page"
     >
 
-      <h1>
-        Статистика
-      </h1>
+      <div class="analytics-section">
 
 
-      <div class="stats-grid">
+        <!-- HEADER -->
 
+        <div class="analytics-title-row">
 
-        <div class="card">
+          <div>
 
-          <div class="card-title">
-            Всего сделок
+            <div class="analytics-kicker">
+              TRADING PERFORMANCE
+            </div>
+
+            <h1>
+              Аналитика
+            </h1>
+
           </div>
 
-          <div
-            id="total"
-            class="card-value"
-          >
-            0
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="card-title">
-            Результат
-          </div>
-
-          <div
-            id="profit"
-            class="card-value profit"
-          >
-            +$0.00
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="card-title">
-            Прибыльных
-          </div>
-
-          <div
-            id="wins"
-            class="card-value profit"
-          >
-            0
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="card-title">
-            Убыточных
-          </div>
-
-          <div
-            id="losses"
-            class="card-value loss"
-          >
-            0
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="card-title">
-            Winrate
-          </div>
-
-          <div
-            id="winrate"
-            class="card-value"
-          >
-            0%
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- CHART PLACE -->
-
-      <div class="chart-card">
-
-        <div class="section-header">
-
-          <h2>
-            Аналитика
-          </h2>
-
-          <span>
-            Скоро
+          <span id="analyticsTrades">
+            0 сделок
           </span>
 
         </div>
 
-        <div
-          class="empty"
-          style="padding-bottom:10px"
-        >
-          График прибыли появится здесь
+
+
+        <!-- MAIN METRICS -->
+
+        <div class="analytics-grid">
+
+
+          <div class="analytics-card">
+
+            <span>
+              Общая прибыль
+            </span>
+
+            <b
+              id="aProfit"
+              class="profit"
+            >
+              +$0.00
+            </b>
+
+          </div>
+
+
+          <div class="analytics-card">
+
+            <span>
+              Winrate
+            </span>
+
+            <b id="aWinrate">
+              0%
+            </b>
+
+          </div>
+
+
+          <div class="analytics-card">
+
+            <span>
+              Средняя прибыль
+            </span>
+
+            <b
+              id="aAvgWin"
+              class="profit"
+            >
+              +$0.00
+            </b>
+
+          </div>
+
+
+          <div class="analytics-card">
+
+            <span>
+              Средний убыток
+            </span>
+
+            <b
+              id="aAvgLoss"
+              class="loss"
+            >
+              -$0.00
+            </b>
+
+          </div>
+
+
+          <div class="analytics-card">
+
+            <span>
+              Profit Factor
+            </span>
+
+            <b id="aProfitFactor">
+              0.00
+            </b>
+
+          </div>
+
+
+          <div class="analytics-card">
+
+            <span>
+              Expectancy
+            </span>
+
+            <b id="aExpectancy">
+              +$0.00
+            </b>
+
+          </div>
+
         </div>
+
+
+
+        <!-- EQUITY -->
+
+        <div class="analytics-panel">
+
+          <div class="panel-head">
+
+            <h3>
+              Кривая капитала
+            </h3>
+
+            <span>
+              по сделкам
+            </span>
+
+          </div>
+
+
+          <div
+            id="equityChart"
+            class="equity-chart"
+          >
+
+            <div class="empty">
+              Добавь сделки — график появится здесь
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- BEST / WORST -->
+
+        <div class="analytics-panel">
+
+          <div class="panel-head">
+
+            <h3>
+              Лучшие показатели
+            </h3>
+
+            <span>
+              результаты
+            </span>
+
+          </div>
+
+
+          <div class="metric-list">
+
+
+            <div>
+
+              <span>
+                Лучшая сделка
+              </span>
+
+              <b
+                id="aBest"
+                class="profit"
+              >
+                +$0.00
+              </b>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Худшая сделка
+              </span>
+
+              <b
+                id="aWorst"
+                class="loss"
+              >
+                -$0.00
+              </b>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Серия побед
+              </span>
+
+              <b id="aWinStreak">
+                0
+              </b>
+
+            </div>
+
+
+            <div>
+
+              <span>
+                Серия убытков
+              </span>
+
+              <b id="aLossStreak">
+                0
+              </b>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- PAIRS -->
+
+        <div class="analytics-panel">
+
+          <div class="panel-head">
+
+            <h3>
+              По валютным парам
+            </h3>
+
+            <span>
+              результат
+            </span>
+
+          </div>
+
+
+          <div
+            id="pairAnalytics"
+            class="pair-analytics"
+          >
+
+            <div class="empty">
+              Пока нет данных
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- DAILY -->
+
+        <div class="analytics-panel">
+
+          <div class="panel-head">
+
+            <h3>
+              Последние дни
+            </h3>
+
+            <span>
+              результат
+            </span>
+
+          </div>
+
+
+          <div
+            id="dailyAnalytics"
+            class="daily-analytics"
+          >
+
+            <div class="empty">
+              Пока нет данных
+            </div>
+
+          </div>
+
+        </div>
+
 
       </div>
 
@@ -609,35 +807,49 @@
 
 
 
+  <!-- ========================= -->
   <!-- BOTTOM NAV -->
+  <!-- ========================= -->
 
   <nav class="bottom-nav">
+
 
     <button
       class="active"
       data-page="home"
     >
+
       🏠<br>
+
       Главная
+
     </button>
 
 
     <button
       data-page="journal"
     >
+
       📒<br>
+
       Журнал
+
     </button>
 
 
     <button
       data-page="stats"
     >
+
       📊<br>
-      Статистика
+
+      Аналитика
+
     </button>
 
+
   </nav>
+
 
 
   <script src="app.js"></script>
