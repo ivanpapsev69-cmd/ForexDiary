@@ -34,7 +34,9 @@ async function api(url, options = {}) {
   return response.json();
 }
 
-/* PAGES */
+/* =========================
+   PAGES
+========================= */
 
 function showPage(page) {
   document.querySelectorAll(".page").forEach(el => {
@@ -65,11 +67,13 @@ function showPage(page) {
   }
 
   if (page === "stats") {
-    loadStats();
+    loadAnalytics();
   }
 }
 
-/* BALANCE */
+/* =========================
+   BALANCE
+========================= */
 
 async function loadBalance() {
   try {
@@ -121,7 +125,9 @@ async function editBalance() {
   }
 }
 
-/* ADD TRADE */
+/* =========================
+   ADD TRADE
+========================= */
 
 async function addTrade(event) {
   event.preventDefault();
@@ -177,7 +183,9 @@ async function addTrade(event) {
   }
 }
 
-/* DATE */
+/* =========================
+   DATE
+========================= */
 
 function getTradeDate(trade) {
   if (!trade.created_at) {
@@ -212,7 +220,9 @@ function isToday(trade) {
   );
 }
 
-/* R:R */
+/* =========================
+   R:R
+========================= */
 
 function calculateRR(trade) {
   const entry = Number(trade.entry);
@@ -235,7 +245,9 @@ function calculateRR(trade) {
   return (reward / risk).toFixed(2);
 }
 
-/* FLAGS */
+/* =========================
+   FLAGS
+========================= */
 
 function pairFlag(pair) {
   const p = String(pair || "").toUpperCase();
@@ -254,7 +266,9 @@ function pairFlag(pair) {
   return "💱";
 }
 
-/* JOURNAL FILTER */
+/* =========================
+   JOURNAL FILTER
+========================= */
 
 let journalTrades = [];
 let currentFilter = "all";
@@ -294,7 +308,9 @@ function getFilteredTrades() {
   });
 }
 
-/* JOURNAL */
+/* =========================
+   JOURNAL
+========================= */
 
 async function loadTrades() {
   try {
@@ -342,6 +358,7 @@ function updateJournalSummary() {
 
   if (profitEl) {
     profitEl.textContent = formatMoney(profit);
+
     profitEl.className =
       `summary-value ${
         profit >= 0 ? "profit" : "loss"
@@ -375,7 +392,9 @@ function renderJournal() {
     .join("");
 }
 
-/* TRADE CARD */
+/* =========================
+   TRADE CARD
+========================= */
 
 function renderTradeCard(trade) {
   const result = Number(trade.result) || 0;
@@ -473,7 +492,9 @@ function renderTradeCard(trade) {
   `;
 }
 
-/* DELETE */
+/* =========================
+   DELETE
+========================= */
 
 async function deleteTrade(id) {
   if (!confirm("Удалить эту сделку?")) {
@@ -492,7 +513,9 @@ async function deleteTrade(id) {
   }
 }
 
-/* HOME */
+/* =========================
+   HOME
+========================= */
 
 async function loadHomeStats() {
   try {
@@ -559,7 +582,669 @@ async function loadHomeTrades() {
   }
 }
 
-/* STATS */
+/* =========================
+   ANALYTICS HELPERS
+========================= */
+
+function aMoney(value) {
+  const n = Number(value) || 0;
+
+  if (n === 0) {
+    return "$0.00";
+  }
+
+  return `${n > 0 ? "+" : "-"}$${Math.abs(n).toFixed(2)}`;
+}
+
+function aClass(value) {
+  const n = Number(value) || 0;
+
+  if (n > 0) return "profit";
+  if (n < 0) return "loss";
+
+  return "";
+}
+
+/* =========================
+   STREAKS
+========================= */
+
+function streaks(trades) {
+  let win = 0;
+  let loss = 0;
+
+  let maxWin = 0;
+  let maxLoss = 0;
+
+  trades.forEach(trade => {
+    const result = Number(trade.result) || 0;
+
+    if (result > 0) {
+      win++;
+      loss = 0;
+
+      if (win > maxWin) {
+        maxWin = win;
+      }
+    } else if (result < 0) {
+      loss++;
+      win = 0;
+
+      if (loss > maxLoss) {
+        maxLoss = loss;
+      }
+    } else {
+      win = 0;
+      loss = 0;
+    }
+  });
+
+  return {
+    maxWin,
+    maxLoss
+  };
+}
+
+/* =========================
+   EQUITY CURVE
+========================= */
+
+function renderEquity(trades) {
+  const container =
+    document.getElementById("equityChart");
+
+  if (!container) return;
+
+  if (!trades.length) {
+    container.innerHTML =
+      `<div class="empty">
+        Добавь сделки — график появится здесь
+      </div>`;
+
+    return;
+  }
+
+  const sorted = [...trades].sort(
+    (a, b) =>
+      getTradeDate(a) - getTradeDate(b)
+  );
+
+  let equity = 0;
+
+  const values = [
+    0,
+    ...sorted.map(trade => {
+      equity += Number(trade.result) || 0;
+      return equity;
+    })
+  ];
+
+  const width = 900;
+  const height = 300;
+  const paddingX = 24;
+  const paddingY = 28;
+
+  const minValue =
+    Math.min(...values);
+
+  const maxValue =
+    Math.max(...values);
+
+  const range =
+    maxValue - minValue || 1;
+
+  const points =
+    values.map((value, index) => {
+      const x =
+        paddingX +
+        (index / Math.max(values.length - 1, 1)) *
+        (width - paddingX * 2);
+
+      const y =
+        height -
+        paddingY -
+        ((value - minValue) / range) *
+        (height - paddingY * 2);
+
+      return {
+        x,
+        y,
+        value
+      };
+    });
+
+  const polyline =
+    points
+      .map(point =>
+        `${point.x},${point.y}`
+      )
+      .join(" ");
+
+  const areaPoints =
+    [
+      `${points[0].x},${height - paddingY}`,
+      ...points.map(point =>
+        `${point.x},${point.y}`
+      ),
+      `${points[points.length - 1].x},${height - paddingY}`
+    ].join(" ");
+
+  const last =
+    points[points.length - 1];
+
+  const first =
+    points[0];
+
+  container.innerHTML = `
+    <div class="equity-svg">
+      <svg
+        viewBox="0 0 ${width} ${height}"
+        preserveAspectRatio="none"
+      >
+
+        <polygon
+          class="equity-area"
+          points="${areaPoints}"
+        />
+
+        <polyline
+          class="equity-line"
+          points="${polyline}"
+        />
+
+        <circle
+          class="equity-point"
+          cx="${first.x}"
+          cy="${first.y}"
+          r="4"
+        />
+
+        <circle
+          class="equity-point"
+          cx="${last.x}"
+          cy="${last.y}"
+          r="5"
+        />
+
+      </svg>
+    </div>
+
+    <div class="equity-labels">
+      <span>
+        Старт: $0.00
+      </span>
+
+      <span class="${aClass(last.value)}">
+        ${aMoney(last.value)}
+      </span>
+    </div>
+  `;
+}
+
+/* =========================
+   PAIR ANALYTICS
+========================= */
+
+function renderPairs(trades) {
+  const container =
+    document.getElementById("pairAnalytics");
+
+  if (!container) return;
+
+  if (!trades.length) {
+    container.innerHTML =
+      `<div class="empty">Пока нет данных</div>`;
+
+    return;
+  }
+
+  const groups = {};
+
+  trades.forEach(trade => {
+    const pair =
+      String(trade.pair || "UNKNOWN")
+        .trim()
+        .toUpperCase();
+
+    if (!groups[pair]) {
+      groups[pair] = {
+        pair,
+        trades: 0,
+        wins: 0,
+        result: 0
+      };
+    }
+
+    const result =
+      Number(trade.result) || 0;
+
+    groups[pair].trades++;
+    groups[pair].result += result;
+
+    if (result > 0) {
+      groups[pair].wins++;
+    }
+  });
+
+  const rows =
+    Object.values(groups)
+      .sort((a, b) =>
+        b.result - a.result
+      );
+
+  const maxAbs =
+    Math.max(
+      ...rows.map(row =>
+        Math.abs(row.result)
+      ),
+      1
+    );
+
+  container.innerHTML =
+    rows.map(row => {
+      const winrate =
+        row.trades
+          ? Math.round(
+              (row.wins / row.trades) * 100
+            )
+          : 0;
+
+      const width =
+        Math.max(
+          5,
+          (Math.abs(row.result) / maxAbs) * 100
+        );
+
+      const positive =
+        row.result >= 0;
+
+      return `
+        <div class="pair-row">
+
+          <div class="pair-row-top">
+
+            <div class="pair-name">
+              ${pairFlag(row.pair)}
+              ${escapeHtml(row.pair)}
+            </div>
+
+            <div class="pair-info">
+              ${row.trades} сделок · ${winrate}%
+            </div>
+
+            <div class="pair-result ${aClass(row.result)}">
+              ${aMoney(row.result)}
+            </div>
+
+          </div>
+
+          <div class="pair-bar">
+            <div
+              class="pair-bar-fill ${
+                positive
+                  ? "pair-positive"
+                  : "pair-negative"
+              }"
+              style="width:${width}%"
+            ></div>
+          </div>
+
+        </div>
+      `;
+    }).join("");
+}
+
+/* =========================
+   DAILY ANALYTICS
+========================= */
+
+function renderDays(trades) {
+  const container =
+    document.getElementById("dailyAnalytics");
+
+  if (!container) return;
+
+  if (!trades.length) {
+    container.innerHTML =
+      `<div class="empty">Пока нет данных</div>`;
+
+    return;
+  }
+
+  const groups = {};
+
+  trades.forEach(trade => {
+    const date =
+      getTradeDate(trade);
+
+    const key =
+      date.toLocaleDateString("ru-RU");
+
+    if (!groups[key]) {
+      groups[key] = {
+        date,
+        result: 0,
+        trades: 0
+      };
+    }
+
+    groups[key].result +=
+      Number(trade.result) || 0;
+
+    groups[key].trades++;
+  });
+
+  const rows =
+    Object.values(groups)
+      .sort((a, b) =>
+        b.date - a.date
+      )
+      .slice(0, 10);
+
+  const maxAbs =
+    Math.max(
+      ...rows.map(row =>
+        Math.abs(row.result)
+      ),
+      1
+    );
+
+  container.innerHTML =
+    rows.map(row => {
+      const width =
+        Math.max(
+          5,
+          (Math.abs(row.result) / maxAbs) * 100
+        );
+
+      const positive =
+        row.result >= 0;
+
+      return `
+        <div class="daily-row">
+
+          <div class="daily-date">
+            <b>
+              ${row.date.toLocaleDateString(
+                "ru-RU",
+                {
+                  day: "2-digit",
+                  month: "2-digit"
+                }
+              )}
+            </b>
+
+            <span>
+              ${row.trades} ${
+                row.trades === 1
+                  ? "сделка"
+                  : "сделок"
+              }
+            </span>
+          </div>
+
+          <div class="daily-bar">
+            <div
+              class="daily-bar-fill ${
+                positive
+                  ? "pair-positive"
+                  : "pair-negative"
+              }"
+              style="width:${width}%"
+            ></div>
+          </div>
+
+          <div class="daily-result ${aClass(row.result)}">
+            ${aMoney(row.result)}
+          </div>
+
+        </div>
+      `;
+    }).join("");
+}
+
+/* =========================
+   FULL ANALYTICS
+========================= */
+
+async function loadAnalytics() {
+  try {
+    const trades =
+      await api("/api/trades");
+
+    const total =
+      trades.length;
+
+    const results =
+      trades.map(trade =>
+        Number(trade.result) || 0
+      );
+
+    const profit =
+      results.reduce(
+        (sum, value) =>
+          sum + value,
+        0
+      );
+
+    const wins =
+      results.filter(
+        value => value > 0
+      );
+
+    const losses =
+      results.filter(
+        value => value < 0
+      );
+
+    const winrate =
+      total
+        ? (wins.length / total) * 100
+        : 0;
+
+    const avgWin =
+      wins.length
+        ? wins.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) / wins.length
+        : 0;
+
+    const avgLoss =
+      losses.length
+        ? losses.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          ) / losses.length
+        : 0;
+
+    const grossProfit =
+      wins.reduce(
+        (sum, value) =>
+          sum + value,
+        0
+      );
+
+    const grossLoss =
+      Math.abs(
+        losses.reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        )
+      );
+
+    const profitFactor =
+      grossLoss > 0
+        ? grossProfit / grossLoss
+        : grossProfit > 0
+          ? Infinity
+          : 0;
+
+    const expectancy =
+      total
+        ? profit / total
+        : 0;
+
+    const best =
+      results.length
+        ? Math.max(...results)
+        : 0;
+
+    const worst =
+      results.length
+        ? Math.min(...results)
+        : 0;
+
+    const chronological =
+      [...trades].sort(
+        (a, b) =>
+          getTradeDate(a) -
+          getTradeDate(b)
+      );
+
+    const series =
+      streaks(chronological);
+
+    const tradesEl =
+      document.getElementById(
+        "analyticsTrades"
+      );
+
+    const profitEl =
+      document.getElementById(
+        "aProfit"
+      );
+
+    const winrateEl =
+      document.getElementById(
+        "aWinrate"
+      );
+
+    const avgWinEl =
+      document.getElementById(
+        "aAvgWin"
+      );
+
+    const avgLossEl =
+      document.getElementById(
+        "aAvgLoss"
+      );
+
+    const pfEl =
+      document.getElementById(
+        "aProfitFactor"
+      );
+
+    const expectancyEl =
+      document.getElementById(
+        "aExpectancy"
+      );
+
+    const bestEl =
+      document.getElementById(
+        "aBest"
+      );
+
+    const worstEl =
+      document.getElementById(
+        "aWorst"
+      );
+
+    const winStreakEl =
+      document.getElementById(
+        "aWinStreak"
+      );
+
+    const lossStreakEl =
+      document.getElementById(
+        "aLossStreak"
+      );
+
+    if (tradesEl) {
+      tradesEl.textContent =
+        `${total} ${
+          total === 1
+            ? "сделка"
+            : "сделок"
+        }`;
+    }
+
+    if (profitEl) {
+      profitEl.textContent =
+        aMoney(profit);
+
+      profitEl.className =
+        aClass(profit);
+    }
+
+    if (winrateEl) {
+      winrateEl.textContent =
+        `${Math.round(winrate)}%`;
+    }
+
+    if (avgWinEl) {
+      avgWinEl.textContent =
+        aMoney(avgWin);
+    }
+
+    if (avgLossEl) {
+      avgLossEl.textContent =
+        aMoney(avgLoss);
+    }
+
+    if (pfEl) {
+      pfEl.textContent =
+        profitFactor === Infinity
+          ? "∞"
+          : profitFactor.toFixed(2);
+    }
+
+    if (expectancyEl) {
+      expectancyEl.textContent =
+        aMoney(expectancy);
+
+      expectancyEl.className =
+        aClass(expectancy);
+    }
+
+    if (bestEl) {
+      bestEl.textContent =
+        aMoney(best);
+    }
+
+    if (worstEl) {
+      worstEl.textContent =
+        aMoney(worst);
+    }
+
+    if (winStreakEl) {
+      winStreakEl.textContent =
+        series.maxWin;
+    }
+
+    if (lossStreakEl) {
+      lossStreakEl.textContent =
+        series.maxLoss;
+    }
+
+    renderEquity(trades);
+    renderPairs(trades);
+    renderDays(trades);
+
+  } catch (e) {
+    console.error(
+      "Analytics error:",
+      e
+    );
+  }
+}
+
+/* =========================
+   OLD STATS COMPATIBILITY
+========================= */
 
 async function loadStats() {
   try {
@@ -581,7 +1266,10 @@ async function loadStats() {
     const winrate =
       document.getElementById("winrate");
 
-    if (total) total.textContent = data.total;
+    if (total) {
+      total.textContent =
+        data.total;
+    }
 
     if (profit) {
       profit.textContent =
@@ -593,8 +1281,15 @@ async function loadStats() {
           : "loss";
     }
 
-    if (wins) wins.textContent = data.wins;
-    if (losses) losses.textContent = data.losses;
+    if (wins) {
+      wins.textContent =
+        data.wins;
+    }
+
+    if (losses) {
+      losses.textContent =
+        data.losses;
+    }
 
     if (winrate) {
       winrate.textContent =
@@ -606,7 +1301,9 @@ async function loadStats() {
   }
 }
 
-/* SECURITY */
+/* =========================
+   SECURITY
+========================= */
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -617,7 +1314,9 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-/* START */
+/* =========================
+   START
+========================= */
 
 document.addEventListener(
   "DOMContentLoaded",
@@ -629,7 +1328,9 @@ document.addEventListener(
         button.addEventListener(
           "click",
           () => {
-            showPage(button.dataset.page);
+            showPage(
+              button.dataset.page
+            );
           }
         );
       });
@@ -648,7 +1349,9 @@ document.addEventListener(
       });
 
     const form =
-      document.getElementById("tradeForm");
+      document.getElementById(
+        "tradeForm"
+      );
 
     if (form) {
       form.addEventListener(
@@ -658,7 +1361,9 @@ document.addEventListener(
     }
 
     const balanceButton =
-      document.getElementById("editBalance");
+      document.getElementById(
+        "editBalance"
+      );
 
     if (balanceButton) {
       balanceButton.addEventListener(
@@ -673,10 +1378,13 @@ document.addEventListener(
 
     setTimeout(() => {
       const loader =
-        document.querySelector(".loading-screen");
+        document.querySelector(
+          ".loading-screen"
+        );
 
       if (loader) {
-        loader.style.display = "none";
+        loader.style.display =
+          "none";
       }
     }, 700);
   }
