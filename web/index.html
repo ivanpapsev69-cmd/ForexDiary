@@ -2,7 +2,6 @@
 <html lang="ru">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -17,11 +16,6 @@
   <link rel="stylesheet" href="style.css">
 
   <style>
-
-    /* =========================
-       ЭКРАН ЗАГРУЗКИ
-    ========================== */
-
     #loadingScreen {
       position: fixed;
       inset: 0;
@@ -52,53 +46,37 @@
     }
 
     .loading-logo {
-      font-size: 32px;
+      font-size: 27px;
       font-weight: 800;
       letter-spacing: -1px;
-
-      color: #ffffff;
-
-      text-shadow:
-        0 0 25px rgba(50, 213, 131, 0.20);
+      color: #fff;
     }
 
     .loading-subtitle {
-      margin-top: 8px;
-
+      margin-top: 6px;
       color: #8da3ba;
-
-      font-size: 13px;
+      font-size: 11px;
     }
 
     .loading-spinner {
-      width: 42px;
-      height: 42px;
-
-      margin-top: 32px;
+      width: 29px;
+      height: 29px;
+      margin-top: 23px;
 
       border: 3px solid rgba(50, 213, 131, 0.15);
-
       border-top-color: #32d583;
-
       border-radius: 50%;
 
-      animation:
-        loadingSpin 0.8s linear infinite;
-
-      box-shadow:
-        0 0 22px rgba(50, 213, 131, 0.12);
+      animation: loadingSpin 0.8s linear infinite;
     }
 
     .loading-text {
-      margin-top: 16px;
-
+      margin-top: 11px;
       color: #71879e;
-
-      font-size: 12px;
+      font-size: 9px;
     }
 
     @keyframes loadingSpin {
-
       from {
         transform: rotate(0deg);
       }
@@ -106,20 +84,11 @@
       to {
         transform: rotate(360deg);
       }
-
     }
-
   </style>
-
 </head>
 
-
 <body>
-
-
-  <!-- =========================
-       ЭКРАН ЗАГРУЗКИ
-  ========================== -->
 
   <div id="loadingScreen">
 
@@ -140,11 +109,9 @@
   </div>
 
 
-
   <div class="app">
 
-
-    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <!-- TOPBAR -->
 
     <header class="topbar">
 
@@ -161,17 +128,16 @@
       </div>
 
       <div class="status">
-        ●
+        <span class="status-dot"></span>
+        ONLINE
       </div>
 
     </header>
 
 
-
     <main>
 
-
-      <!-- ГЛАВНАЯ -->
+      <!-- HOME -->
 
       <section
         id="home"
@@ -185,14 +151,11 @@
 
         <div class="dashboard">
 
-
-          <!-- БАЛАНС -->
-
           <div class="card balance-card">
 
-            <span>
+            <div class="balance-label">
               Balance
-            </span>
+            </div>
 
             <strong id="balance">
               $10,000.00
@@ -205,104 +168,111 @@
               ✏️ Изменить
             </button>
 
-            <small>
-              Текущий баланс
-            </small>
+          </div>
+
+
+          <div class="dashboard-grid">
+
+            <div class="card">
+
+              <div class="card-title">
+                P&L
+              </div>
+
+              <div
+                id="homeProfit"
+                class="card-value"
+              >
+                $0.00
+              </div>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-title">
+                Winrate
+              </div>
+
+              <div
+                id="homeWinrate"
+                class="card-value"
+              >
+                0%
+              </div>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-title">
+                Сделки
+              </div>
+
+              <div
+                id="homeTrades"
+                class="card-value"
+              >
+                0
+              </div>
+
+            </div>
+
+
+            <div class="card">
+
+              <div class="card-title">
+                Побед
+              </div>
+
+              <div
+                id="homeWins"
+                class="card-value"
+              >
+                0
+              </div>
+
+            </div>
 
           </div>
 
 
+          <button
+            class="primary-button"
+            onclick="showPage('new')"
+          >
+            + Новая сделка
+          </button>
 
-          <!-- P&L -->
 
-          <div class="card profit-card">
+          <div class="section-header">
+
+            <h2>
+              Последние сделки
+            </h2>
 
             <span>
-              P&L
+              Журнал
             </span>
-
-            <strong id="homeProfit">
-              $0.00
-            </strong>
-
-            <small>
-              Общий результат
-            </small>
 
           </div>
 
 
-
-          <!-- WINRATE -->
-
-          <div class="card">
-
-            <span>
-              Winrate
-            </span>
-
-            <strong id="homeWinrate">
-              0%
-            </strong>
-
-            <small>
-              Успешные сделки
-            </small>
-
+          <div
+            id="homeTradesList"
+            class="trade-list"
+          >
+            Пока нет сделок
           </div>
 
-
-
-          <!-- СДЕЛКИ -->
-
-          <div class="card">
-
-            <span>
-              Сделки
-            </span>
-
-            <strong id="homeTrades">
-              0
-            </strong>
-
-            <small>
-              Всего сделок
-            </small>
-
-          </div>
-
-
         </div>
-
-
-
-        <button
-          class="primary-button"
-          onclick="showPage('new')"
-        >
-          + Новая сделка
-        </button>
-
-
-
-        <div class="section-title">
-          Последние сделки
-        </div>
-
-
-        <div
-          id="homeTradesList"
-          class="trade-list"
-        >
-          Пока нет сделок
-        </div>
-
 
       </section>
 
 
-
-      <!-- НОВАЯ СДЕЛКА -->
+      <!-- NEW TRADE -->
 
       <section
         id="new"
@@ -314,8 +284,7 @@
         </h1>
 
 
-        <div class="form-card">
-
+        <div class="card form-card">
 
           <label>
             Валютная пара
@@ -409,23 +378,134 @@
             Сохранить сделку
           </button>
 
-
         </div>
 
       </section>
 
 
-
-      <!-- ЖУРНАЛ -->
+      <!-- JOURNAL -->
 
       <section
         id="journal"
         class="page"
       >
 
-        <h1>
-          Журнал сделок
-        </h1>
+        <div class="journal-head">
+
+          <div>
+
+            <h1>
+              Журнал сделок
+            </h1>
+
+            <p>
+              История твоих торговых решений
+            </p>
+
+          </div>
+
+          <div class="journal-icon">
+            ▤
+          </div>
+
+        </div>
+
+
+        <div class="journal-filters">
+
+          <button
+            class="journal-filter active"
+            onclick="filterTrades('all', this)"
+          >
+            Все
+            <span id="filterAll">0</span>
+          </button>
+
+          <button
+            class="journal-filter"
+            onclick="filterTrades('profit', this)"
+          >
+            Прибыльные
+            <span id="filterProfit">0</span>
+          </button>
+
+          <button
+            class="journal-filter"
+            onclick="filterTrades('loss', this)"
+          >
+            Убыточные
+            <span id="filterLoss">0</span>
+          </button>
+
+          <button
+            class="journal-filter"
+            onclick="filterTrades('today', this)"
+          >
+            Сегодня
+            <span id="filterToday">0</span>
+          </button>
+
+        </div>
+
+
+        <div class="journal-summary">
+
+          <div>
+            <span>
+              Общий результат
+            </span>
+
+            <strong id="journalProfit">
+              $0.00
+            </strong>
+
+            <small>
+              P&L
+            </small>
+          </div>
+
+
+          <div>
+            <span>
+              Всего сделок
+            </span>
+
+            <strong id="journalTotal">
+              0
+            </strong>
+          </div>
+
+
+          <div>
+            <span>
+              Прибыльные
+            </span>
+
+            <strong id="journalWins">
+              0
+            </strong>
+
+            <small id="journalWinrate">
+              0%
+            </small>
+          </div>
+
+
+          <div>
+            <span>
+              Убыточные
+            </span>
+
+            <strong id="journalLosses">
+              0
+            </strong>
+
+            <small id="journalLossrate">
+              0%
+            </small>
+          </div>
+
+        </div>
 
 
         <div
@@ -435,12 +515,10 @@
           Загрузка...
         </div>
 
-
       </section>
 
 
-
-      <!-- СТАТИСТИКА -->
+      <!-- STATS -->
 
       <section
         id="stats"
@@ -454,12 +532,11 @@
 
         <div class="stats-grid">
 
-
           <div class="card">
 
-            <span>
+            <div class="card-title">
               Всего сделок
-            </span>
+            </div>
 
             <strong id="total">
               0
@@ -470,9 +547,9 @@
 
           <div class="card">
 
-            <span>
+            <div class="card-title">
               Прибыль
-            </span>
+            </div>
 
             <strong id="profit">
               $0.00
@@ -483,9 +560,9 @@
 
           <div class="card">
 
-            <span>
+            <div class="card-title">
               Побед
-            </span>
+            </div>
 
             <strong id="wins">
               0
@@ -496,9 +573,9 @@
 
           <div class="card">
 
-            <span>
+            <div class="card-title">
               Убытков
-            </span>
+            </div>
 
             <strong id="losses">
               0
@@ -506,15 +583,14 @@
 
           </div>
 
-
         </div>
 
 
-        <div class="card winrate-card">
+        <div class="card">
 
-          <span>
+          <div class="card-title">
             Winrate
-          </span>
+          </div>
 
           <strong id="winrate">
             0%
@@ -522,95 +598,59 @@
 
         </div>
 
-
       </section>
-
 
     </main>
 
 
-
-    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <!-- NAVIGATION -->
 
     <nav class="bottom-nav">
 
-
       <button
+        data-page="home"
         onclick="showPage('home')"
       >
-
-        <span>
-          ⌂
-        </span>
-
-        <small>
-          Главная
-        </small>
-
+        <span>⌂</span>
+        <small>Главная</small>
       </button>
 
 
       <button
+        data-page="new"
         onclick="showPage('new')"
       >
-
-        <span>
-          ＋
-        </span>
-
-        <small>
-          Сделка
-        </small>
-
+        <span>＋</span>
+        <small>Сделка</small>
       </button>
 
 
       <button
+        data-page="journal"
         onclick="showPage('journal')"
       >
-
-        <span>
-          ▤
-        </span>
-
-        <small>
-          Журнал
-        </small>
-
+        <span>▤</span>
+        <small>Журнал</small>
       </button>
 
 
       <button
+        data-page="stats"
         onclick="showPage('stats')"
       >
-
-        <span>
-          ◔
-        </span>
-
-        <small>
-          Статистика
-        </small>
-
+        <span>◔</span>
+        <small>Статистика</small>
       </button>
 
-
     </nav>
-
 
   </div>
 
 
-
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 
 
   <script>
-
-    /*
-      Убираем экран загрузки
-      после полной загрузки страницы.
-    */
 
     window.addEventListener(
       "load",
@@ -625,11 +665,9 @@
               );
 
             if (loading) {
-
               loading.classList.add(
                 "hidden"
               );
-
             }
 
           },
@@ -640,7 +678,6 @@
     );
 
   </script>
-
 
 </body>
 
