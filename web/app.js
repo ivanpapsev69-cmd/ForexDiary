@@ -14,8 +14,8 @@ let selectedDirection = "BUY";
 let allTrades = [];
 
 /* =========================
-   API
-   ========================= */
+   TELEGRAM / API
+========================= */
 
 function getHeaders() {
   return {
@@ -43,53 +43,7 @@ async function api(url, options = {}) {
 
 /* =========================
    HELPERS
-   ========================= */
-
-function money(value) {
-  const number = Number(value) || 0;
-
-  return number < 0
-    ? `-$${Math.abs(number).toFixed(2)}`
-    : `$${number.toFixed(2)}`;
-}
-
-function moneyClass(value) {
-  return Number(value) >= 0 ? "green" : "red";
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return date.toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function setText(selector, value) {
-  const element = $(selector);
-
-  if (element) {
-    element.textContent = value;
-  }
-}
+========================= */
 
 function showToast(message) {
   const toast = $("#toast");
@@ -103,12 +57,42 @@ function showToast(message) {
 
   showToast.timer = setTimeout(() => {
     toast.classList.remove("show");
-  }, 2200);
+  }, 2500);
+}
+
+function formatMoney(value) {
+  const number = Number(value) || 0;
+
+  return number.toLocaleString("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatDate(date) {
+  if (!date) return "";
+
+  const d = new Date(date.replace(" ", "T") + "Z");
+
+  if (Number.isNaN(d.getTime())) {
+    return date;
+  }
+
+  return d.toLocaleDateString("ru-RU");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 /* =========================
-   NAVIGATION
-   ========================= */
+   PAGE NAVIGATION
+========================= */
 
 function showPage(page) {
   currentPage = page;
@@ -131,52 +115,60 @@ function showPage(page) {
   });
 
   if (page === "home") {
-    loadHome();
+    loadHome().catch((error) => {
+      console.error("Home:", error);
+    });
   }
 
   if (page === "journal") {
-    loadJournal();
+    loadJournal().catch((error) => {
+      console.error("Journal:", error);
+    });
   }
 
   if (page === "stats") {
-    loadAnalytics();
+    loadAnalytics().catch((error) => {
+      console.error("Analytics:", error);
+    });
   }
 }
 
 /* =========================
    BALANCE
-   ========================= */
+========================= */
 
 async function loadBalance() {
-  try {
-    const data = await api("/api/balance");
+  const data = await api("/api/balance");
 
-    const balance = Number(data.balance) || 0;
+  const balance = $("#balance");
 
-    setText("#balance", money(balance));
-
-    return balance;
-  } catch (error) {
-    console.error("Balance error:", error);
-    setText("#balance", "$0.00");
-    return 0;
+  if (balance) {
+    balance.textContent = formatMoney(data.balance);
   }
+
+  return data;
 }
 
 async function editBalance() {
-  const current = await loadBalance();
+  const current = $("#balance")?.textContent || "10000";
+
+  const clean = current
+    .replace(/\s/g, "")
+    .replace(",", ".");
 
   const value = prompt(
     "Введите новый баланс:",
-    current.toFixed(2)
+    clean
   );
 
   if (value === null) return;
 
-  const balance = Number(value);
+  const balance = Number(
+    String(value).replace(",", ".")
+  );
 
   if (!Number.isFinite(balance)) {
-    showToast("Введите корректную сумму");
+    showToast("Некорректный баланс");
     return;
   }
 
@@ -193,62 +185,76 @@ async function editBalance() {
     showToast("Баланс обновлён");
   } catch (error) {
     console.error(error);
-    showToast("Ошибка изменения баланса");
+    showToast("Не удалось изменить баланс");
   }
 }
 
 /* =========================
    HOME
-   ========================= */
+========================= */
 
 async function loadHome() {
-  await loadBalance();
-
   try {
-    const stats = await api("/api/stats");
+    const [balance, stats, trades] =
+      await Promise.all([
+        api("/api/balance"),
+        api("/api/stats"),
+        api("/api/trades")
+      ]);
+
+    const balanceElement = $("#balance");
+
+    if (balanceElement) {
+      balanceElement.textContent =
+        formatMoney(balance.balance);
+    }
 
     const total =
-      Number(stats.totalTrades) || 0;
+      Number(stats.total) || 0;
 
     const profit =
-      Number(stats.totalProfit) || 0;
+      Number(stats.profit) || 0;
 
     const winrate =
       Number(stats.winrate) || 0;
 
-    setText("#homeTotal", total);
+    const homeTotal = $("#homeTotal");
+    const homeProfit = $("#homeProfit");
+    const homeWinrate = $("#homeWinrate");
 
-    setText("#homeProfit", money(profit));
-
-    const profitElement = $("#homeProfit");
-
-    if (profitElement) {
-      profitElement.className =
-        `stat-value ${moneyClass(profit)}`;
+    if (homeTotal) {
+      homeTotal.textContent = total;
     }
 
-    setText(
-      "#homeWinrate",
-      `${winrate.toFixed(1)}%`
-    );
+    if (homeProfit) {
+      homeProfit.textContent =
+        formatMoney(profit);
+    }
 
+    if (homeWinrate) {
+      homeWinrate.textContent =
+        `${winrate}%`;
+    }
+
+    renderHomeTrades(trades);
+
+    return {
+      balance,
+      stats,
+      trades
+    };
   } catch (error) {
-    console.error("Home stats:", error);
-  }
+    console.error("loadHome:", error);
 
-  try {
-    const data = await api("/api/trades");
+    /*
+      Главное:
+      ошибка загрузки данных больше НЕ блокирует
+      запуск интерфейса.
+    */
 
-    allTrades = Array.isArray(data)
-      ? data
-      : data.trades || [];
+    showToast("Не удалось загрузить данные");
 
-    renderHomeTrades(
-      allTrades.slice(0, 5)
-    );
-
-  } catch (error) {
-    console.error("Home trades:", error);
+    return null;
   }
 }
 
@@ -257,31 +263,54 @@ function renderHomeTrades(trades) {
 
   if (!container) return;
 
-  if (!trades.length) {
+  if (!Array.isArray(trades) || trades.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">📒</div>
-
-        <div class="empty-title">
-          Сделок пока нет
-        </div>
-
-        <div class="empty-text">
-          Добавьте первую сделку
-        </div>
+        Пока нет сделок
       </div>
     `;
 
     return;
   }
 
-  container.innerHTML =
-    trades.map(renderTradeCard).join("");
+  container.innerHTML = trades
+    .slice(0, 5)
+    .map((trade) => {
+      const result =
+        Number(trade.result) || 0;
+
+      const resultClass =
+        result > 0
+          ? "profit"
+          : result < 0
+            ? "loss"
+            : "";
+
+      return `
+        <div class="trade-card">
+          <div>
+            <strong>
+              ${escapeHtml(trade.pair || "Без пары")}
+            </strong>
+
+            <div class="trade-date">
+              ${formatDate(trade.created_at)}
+            </div>
+          </div>
+
+          <div class="${resultClass}">
+            ${result > 0 ? "+" : ""}
+            ${formatMoney(result)}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 /* =========================
    DIRECTION
-   ========================= */
+========================= */
 
 function setDirection(direction) {
   selectedDirection = direction;
@@ -293,1166 +322,55 @@ function setDirection(direction) {
   }
 
   $$(".direction-button").forEach((button) => {
-    const active =
-      button.dataset.direction === direction;
-
     button.classList.toggle(
       "active",
-      active
+      button.dataset.direction === direction
     );
-
-    if (active) {
-      button.classList.remove(
-        "buy",
-        "sell"
-      );
-
-      button.classList.add(
-        direction.toLowerCase()
-      );
-    }
   });
 }
 
 /* =========================
    ADD TRADE
-   ========================= */
+========================= */
 
 async function addTrade(event) {
-  event.preventDefault();
+  if (event) {
+    event.preventDefault();
+  }
 
   const pair =
-    $("#pair")?.value.trim();
+    $("#pair")?.value.trim() || "";
 
   const entry =
-    Number($("#entry")?.value);
+    $("#entry")?.value || "";
 
   const stopLoss =
-    Number($("#stop_loss")?.value);
+    $("#stop_loss")?.value || "";
 
   const takeProfit =
-    Number($("#take_profit")?.value);
+    $("#take_profit")?.value || "";
 
   const result =
-    Number($("#result")?.value);
+    $("#result")?.value || "";
 
   const notes =
-    $("#notes")?.value.trim();
+    $("#notes")?.value.trim() || "";
 
   if (!pair) {
-    showToast("Введите валютную пару");
+    showToast("Укажите торговую пару");
     return;
   }
-
-  if (!Number.isFinite(result)) {
-    showToast("Введите результат сделки");
-    return;
-  }
-
-  const trade = {
-    pair,
-    direction: selectedDirection,
-
-    entry: Number.isFinite(entry)
-      ? entry
-      : null,
-
-    stop_loss: Number.isFinite(stopLoss)
-      ? stopLoss
-      : null,
-
-    take_profit:
-      Number.isFinite(takeProfit)
-        ? takeProfit
-        : null,
-
-    result,
-    notes,
-
-    date: new Date().toISOString()
-  };
 
   try {
     await api("/api/trades", {
       method: "POST",
-      body: JSON.stringify(trade)
-    });
-
-    const form = $("#tradeForm");
-
-    if (form) {
-      form.reset();
-    }
-
-    setDirection("BUY");
-
-    showToast("Сделка добавлена");
-
-    await loadHome();
-
-    showPage("journal");
-
-  } catch (error) {
-    console.error("Add trade:", error);
-    showToast("Не удалось добавить сделку");
-  }
-}
-
-/* =========================
-   TRADE CARD
-   ========================= */
-
-function renderTradeCard(trade) {
-  const result =
-    Number(trade.result) || 0;
-
-  const direction =
-    String(trade.direction || "BUY")
-      .toUpperCase();
-
-  const directionClass =
-    direction === "SELL"
-      ? "sell"
-      : "buy";
-
-  return `
-    <div class="trade-card">
-
-      <div class="trade-top">
-
-        <div class="trade-pair">
-
-          <span>
-            ${escapeHtml(
-              trade.pair || "—"
-            )}
-          </span>
-
-          <span
-            class="trade-direction ${directionClass}"
-          >
-            ${direction}
-          </span>
-
-        </div>
-
-        <div
-          class="trade-result ${
-            result >= 0
-              ? "profit"
-              : "loss"
-          }"
-        >
-          ${money(result)}
-        </div>
-
-      </div>
-
-
-      <div class="trade-middle">
-
-        <div class="trade-info">
-          <span class="trade-info-label">
-            Entry
-          </span>
-
-          <span class="trade-info-value">
-            ${trade.entry ?? "—"}
-          </span>
-        </div>
-
-
-        <div class="trade-info">
-          <span class="trade-info-label">
-            SL
-          </span>
-
-          <span class="trade-info-value">
-            ${trade.stop_loss ?? "—"}
-          </span>
-        </div>
-
-
-        <div class="trade-info">
-          <span class="trade-info-label">
-            TP
-          </span>
-
-          <span class="trade-info-value">
-            ${trade.take_profit ?? "—"}
-          </span>
-        </div>
-
-      </div>
-
-
-      ${
-        trade.notes
-          ? `
-            <div
-              style="
-                margin-top:12px;
-                color:var(--muted);
-                font-size:12px;
-                line-height:1.45;
-              "
-            >
-              ${escapeHtml(trade.notes)}
-            </div>
-          `
-          : ""
-      }
-
-
-      <div class="trade-bottom">
-
-        <span class="trade-date">
-          ${formatDate(
-            trade.date ||
-            trade.created_at
-          )}
-        </span>
-
-        <button
-          class="delete-trade"
-          data-delete="${trade.id}"
-          type="button"
-        >
-          Удалить
-        </button>
-
-      </div>
-
-    </div>
-  `;
-}
-
-/* =========================
-   JOURNAL
-   ========================= */
-
-async function loadJournal() {
-  try {
-    const data =
-      await api("/api/trades");
-
-    allTrades = Array.isArray(data)
-      ? data
-      : data.trades || [];
-
-    renderJournal();
-
-  } catch (error) {
-    console.error("Journal:", error);
-
-    const container = $("#trades");
-
-    if (container) {
-      container.innerHTML = `
-        <div class="empty-state">
-          Не удалось загрузить сделки
-        </div>
-      `;
-    }
-  }
-}
-
-function renderJournal() {
-  const container = $("#trades");
-
-  if (!container) return;
-
-  let trades = [...allTrades];
-
-  if (currentFilter === "profit") {
-    trades = trades.filter(
-      (trade) =>
-        Number(trade.result) > 0
-    );
-  }
-
-  if (currentFilter === "loss") {
-    trades = trades.filter(
-      (trade) =>
-        Number(trade.result) < 0
-    );
-  }
-
-  if (currentFilter === "today") {
-    const today =
-      new Date()
-        .toISOString()
-        .slice(0, 10);
-
-    trades = trades.filter((trade) => {
-      const date =
-        new Date(
-          trade.date ||
-          trade.created_at
-        );
-
-      return (
-        !Number.isNaN(date.getTime()) &&
-        date.toISOString()
-          .slice(0, 10) === today
-      );
-    });
-  }
-
-  if (!trades.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-
-        <div class="empty-icon">
-          📭
-        </div>
-
-        <div class="empty-title">
-          Сделок нет
-        </div>
-
-        <div class="empty-text">
-          В выбранном фильтре ничего нет
-        </div>
-
-      </div>
-    `;
-
-    updateJournalSummary([]);
-
-    return;
-  }
-
-  container.innerHTML =
-    trades.map(renderTradeCard).join("");
-
-  updateJournalSummary(trades);
-}
-
-function updateJournalSummary(trades) {
-  const total =
-    trades.length;
-
-  const profit =
-    trades.reduce(
-      (sum, trade) =>
-        sum +
-        (Number(trade.result) || 0),
-      0
-    );
-
-  const wins =
-    trades.filter(
-      (trade) =>
-        Number(trade.result) > 0
-    ).length;
-
-  const winrate =
-    total > 0
-      ? (wins / total) * 100
-      : 0;
-
-  setText(
-    "#journalTotal",
-    total
-  );
-
-  setText(
-    "#journalProfit",
-    money(profit)
-  );
-
-  const profitElement =
-    $("#journalProfit");
-
-  if (profitElement) {
-    profitElement.className =
-      `stat-value ${moneyClass(profit)}`;
-  }
-
-  setText(
-    "#journalWinrate",
-    `${winrate.toFixed(1)}%`
-  );
-}
-
-/* =========================
-   DELETE
-   ========================= */
-
-async function deleteTrade(id) {
-  if (!id) return;
-
-  if (!confirm("Удалить эту сделку?")) {
-    return;
-  }
-
-  try {
-    await api(
-      `/api/trades/${id}`,
-      {
-        method: "DELETE"
-      }
-    );
-
-    showToast("Сделка удалена");
-
-    await loadJournal();
-    await loadHome();
-
-  } catch (error) {
-    console.error("Delete:", error);
-    showToast("Не удалось удалить сделку");
-  }
-}
-
-/* =========================
-   ANALYTICS
-   ========================= */
-
-async function loadAnalytics() {
-  try {
-    const data =
-      await api("/api/trades");
-
-    const trades =
-      Array.isArray(data)
-        ? data
-        : data.trades || [];
-
-    calculateAnalytics(trades);
-
-  } catch (error) {
-    console.error(
-      "Analytics:",
-      error
-    );
-  }
-}
-
-function calculateAnalytics(trades) {
-  const results =
-    trades.map(
-      (trade) =>
-        Number(trade.result) || 0
-    );
-
-  const totalTrades =
-    results.length;
-
-  const totalProfit =
-    results.reduce(
-      (sum, value) =>
-        sum + value,
-      0
-    );
-
-  const wins =
-    results.filter(
-      (value) => value > 0
-    );
-
-  const losses =
-    results.filter(
-      (value) => value < 0
-    );
-
-  const winrate =
-    totalTrades
-      ? (wins.length /
-          totalTrades) *
-        100
-      : 0;
-
-  const avgWin =
-    wins.length
-      ? wins.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) / wins.length
-      : 0;
-
-  const avgLoss =
-    losses.length
-      ? Math.abs(
-          losses.reduce(
-            (sum, value) =>
-              sum + value,
-            0
-          ) / losses.length
-        )
-      : 0;
-
-  const grossProfit =
-    wins.reduce(
-      (sum, value) =>
-        sum + value,
-      0
-    );
-
-  const grossLoss =
-    Math.abs(
-      losses.reduce(
-        (sum, value) =>
-          sum + value,
-        0
-      )
-    );
-
-  const profitFactor =
-    grossLoss > 0
-      ? grossProfit / grossLoss
-      : grossProfit > 0
-        ? Infinity
-        : 0;
-
-  const expectancy =
-    totalTrades
-      ? totalProfit /
-        totalTrades
-      : 0;
-
-  setText(
-    "#analyticsTrades",
-    totalTrades
-  );
-
-  setText(
-    "#aProfit",
-    money(totalProfit)
-  );
-
-  setText(
-    "#aWinrate",
-    `${winrate.toFixed(1)}%`
-  );
-
-  setText(
-    "#aAvgWin",
-    money(avgWin)
-  );
-
-  setText(
-    "#aAvgLoss",
-    money(avgLoss)
-  );
-
-  setText(
-    "#aProfitFactor",
-    Number.isFinite(profitFactor)
-      ? profitFactor.toFixed(2)
-      : "∞"
-  );
-
-  setText(
-    "#aExpectancy",
-    money(expectancy)
-  );
-
-  const best =
-    results.length
-      ? Math.max(...results)
-      : 0;
-
-  const worst =
-    results.length
-      ? Math.min(...results)
-      : 0;
-
-  setText(
-    "#aBest",
-    money(best)
-  );
-
-  setText(
-    "#aWorst",
-    money(worst)
-  );
-
-  const streaks =
-    calculateStreaks(results);
-
-  setText(
-    "#aWinStreak",
-    streaks.maxWin
-  );
-
-  setText(
-    "#aLossStreak",
-    streaks.maxLoss
-  );
-
-  renderEquityCurve(results);
-  renderPairAnalytics(trades);
-  renderDailyAnalytics(trades);
-}
-
-/* =========================
-   STREAKS
-   ========================= */
-
-function calculateStreaks(results) {
-  let win = 0;
-  let loss = 0;
-
-  let maxWin = 0;
-  let maxLoss = 0;
-
-  results.forEach((result) => {
-    if (result > 0) {
-      win++;
-      loss = 0;
-
-      maxWin =
-        Math.max(maxWin, win);
-
-    } else if (result < 0) {
-      loss++;
-      win = 0;
-
-      maxLoss =
-        Math.max(maxLoss, loss);
-
-    } else {
-      win = 0;
-      loss = 0;
-    }
-  });
-
-  return {
-    maxWin,
-    maxLoss
-  };
-}
-
-/* =========================
-   EQUITY CHART
-   ========================= */
-
-function renderEquityCurve(results) {
-  const canvas =
-    $("#equityChart");
-
-  if (!canvas) return;
-
-  const ctx =
-    canvas.getContext("2d");
-
-  const width =
-    canvas.clientWidth || 500;
-
-  const height =
-    canvas.clientHeight || 220;
-
-  const dpr =
-    window.devicePixelRatio || 1;
-
-  canvas.width =
-    width * dpr;
-
-  canvas.height =
-    height * dpr;
-
-  ctx.setTransform(
-    dpr,
-    0,
-    0,
-    dpr,
-    0,
-    0
-  );
-
-  ctx.clearRect(
-    0,
-    0,
-    width,
-    height
-  );
-
-  if (!results.length) {
-    ctx.fillStyle =
-      "#8b96a5";
-
-    ctx.font =
-      "13px sans-serif";
-
-    ctx.textAlign =
-      "center";
-
-    ctx.fillText(
-      "Пока недостаточно данных",
-      width / 2,
-      height / 2
-    );
-
-    return;
-  }
-
-  let equity = 0;
-
-  const points = [0];
-
-  results.forEach((value) => {
-    equity += value;
-    points.push(equity);
-  });
-
-  const min =
-    Math.min(...points);
-
-  const max =
-    Math.max(...points);
-
-  const range =
-    max - min || 1;
-
-  const padding = 18;
-
-  ctx.strokeStyle =
-    "#252d38";
-
-  ctx.lineWidth = 1;
-
-  for (let i = 1; i <= 3; i++) {
-    const y =
-      padding +
-      ((height -
-        padding * 2) *
-        i) /
-        4;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      padding,
-      y
-    );
-
-    ctx.lineTo(
-      width - padding,
-      y
-    );
-
-    ctx.stroke();
-  }
-
-  ctx.beginPath();
-
-  points.forEach(
-    (value, index) => {
-      const x =
-        padding +
-        ((width -
-          padding * 2) *
-          index) /
-          Math.max(
-            points.length - 1,
-            1
-          );
-
-      const y =
-        height -
-        padding -
-        ((value - min) /
-          range) *
-          (height -
-            padding * 2);
-
-      if (index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-  );
-
-  ctx.strokeStyle =
-    "#5b8cff";
-
-  ctx.lineWidth = 3;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-
-  ctx.stroke();
-}
-
-/* =========================
-   PAIR ANALYTICS
-   ========================= */
-
-function renderPairAnalytics(trades) {
-  const container =
-    $("#pairAnalytics");
-
-  if (!container) return;
-
-  const pairs = {};
-
-  trades.forEach((trade) => {
-    const pair =
-      trade.pair || "Unknown";
-
-    if (!pairs[pair]) {
-      pairs[pair] = {
-        trades: 0,
-        profit: 0
-      };
-    }
-
-    pairs[pair].trades++;
-
-    pairs[pair].profit +=
-      Number(trade.result) || 0;
-  });
-
-  const entries =
-    Object.entries(pairs);
-
-  if (!entries.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        Нет данных
-      </div>
-    `;
-
-    return;
-  }
-
-  entries.sort(
-    (a, b) =>
-      b[1].profit -
-      a[1].profit
-  );
-
-  container.innerHTML = `
-    <table class="analytics-table">
-
-      <thead>
-        <tr>
-          <th>Пара</th>
-          <th>Сделки</th>
-          <th>Результат</th>
-        </tr>
-      </thead>
-
-      <tbody>
-
-        ${entries
-          .map(
-            ([pair, data]) => `
-              <tr>
-
-                <td>
-                  ${escapeHtml(pair)}
-                </td>
-
-                <td>
-                  ${data.trades}
-                </td>
-
-                <td
-                  class="${
-                    data.profit >= 0
-                      ? "green"
-                      : "red"
-                  }"
-                >
-                  ${money(data.profit)}
-                </td>
-
-              </tr>
-            `
-          )
-          .join("")}
-
-      </tbody>
-
-    </table>
-  `;
-}
-
-/* =========================
-   DAILY ANALYTICS
-   ========================= */
-
-function renderDailyAnalytics(trades) {
-  const container =
-    $("#dailyAnalytics");
-
-  if (!container) return;
-
-  const days = {};
-
-  trades.forEach((trade) => {
-    const date =
-      new Date(
-        trade.date ||
-        trade.created_at
-      );
-
-    if (Number.isNaN(date.getTime())) {
-      return;
-    }
-
-    const key =
-      date
-        .toISOString()
-        .slice(0, 10);
-
-    if (!days[key]) {
-      days[key] = 0;
-    }
-
-    days[key] +=
-      Number(trade.result) || 0;
-  });
-
-  const entries =
-    Object.entries(days)
-      .sort((a, b) =>
-        a[0].localeCompare(b[0])
-      )
-      .slice(-14);
-
-  if (!entries.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        Нет данных
-      </div>
-    `;
-
-    return;
-  }
-
-  container.innerHTML = `
-    <table class="analytics-table">
-
-      <thead>
-        <tr>
-          <th>Дата</th>
-          <th>Результат</th>
-        </tr>
-      </thead>
-
-      <tbody>
-
-        ${entries
-          .map(
-            ([date, result]) => `
-              <tr>
-
-                <td>
-                  ${date}
-                </td>
-
-                <td
-                  class="${
-                    result >= 0
-                      ? "green"
-                      : "red"
-                  }"
-                >
-                  ${money(result)}
-                </td>
-
-              </tr>
-            `
-          )
-          .join("")}
-
-      </tbody>
-
-    </table>
-  `;
-}
-
-/* =========================
-   EVENTS
-   ========================= */
-
-function initEvents() {
-
-  /* NAVIGATION */
-
-  $$(".nav-button").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          showPage(
-            button.dataset.page
-          );
-        }
-      );
-    }
-  );
-
-
-  /* TRADE FORM */
-
-  const form =
-    $("#tradeForm");
-
-  if (form) {
-    form.addEventListener(
-      "submit",
-      addTrade
-    );
-  }
-
-
-  /* DIRECTION */
-
-  $$(".direction-button").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          setDirection(
-            button.dataset.direction
-          );
-        }
-      );
-    }
-  );
-
-
-  /* FILTERS */
-
-  $$(".filter-button").forEach(
-    (button) => {
-      button.addEventListener(
-        "click",
-        () => {
-
-          currentFilter =
-            button.dataset.filter ||
-            "all";
-
-          $$(".filter-button")
-            .forEach((item) => {
-              item.classList.toggle(
-                "active",
-                item === button
-              );
-            });
-
-          renderJournal();
-        }
-      );
-    }
-  );
-
-
-  /* EDIT BALANCE */
-
-  const edit =
-    $("#editBalance");
-
-  if (edit) {
-    edit.addEventListener(
-      "click",
-      editBalance
-    );
-  }
-
-
-  /* NEW TRADE */
-
-  const newTrade =
-    $("#newTrade");
-
-  if (newTrade) {
-    newTrade.addEventListener(
-      "click",
-      () => showPage("add")
-    );
-  }
-
-
-  /* BACK */
-
-  const back =
-    $("#backFromAdd");
-
-  if (back) {
-    back.addEventListener(
-      "click",
-      () => showPage("home")
-    );
-  }
-
-
-  /* JOURNAL */
-
-  const journal =
-    $("#openJournal");
-
-  if (journal) {
-    journal.addEventListener(
-      "click",
-      () => showPage("journal")
-    );
-  }
-
-
-  /* DELETE */
-
-  document.addEventListener(
-    "click",
-    (event) => {
-
-      const button =
-        event.target.closest(
-          "[data-delete]"
-        );
-
-      if (!button) return;
-
-      deleteTrade(
-        button.dataset.delete
-      );
-    }
-  );
-
-
-  /* RESIZE */
-
-  window.addEventListener(
-    "resize",
-    () => {
-      if (currentPage === "stats") {
-        loadAnalytics();
-      }
-    }
-  );
-}
-
-/* =========================
-   START
-   ========================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  async () => {
-
-    initEvents();
-
-    setDirection("BUY");
-
-    await loadHome();
-
-    showPage("home");
-
-    const loader =
-      $("#loader");
-
-    if (loader) {
-      loader.classList.add(
-        "hidden"
-      );
-    }
-
-  }
-);
+      body: JSON.stringify({
+        pair,
+        direction: selectedDirection,
+        entry: Number(entry) || 0,
+        stop_loss: Number(stopLoss) || 0,
+        take_profit: Number(takeProfit) || 0,
+        result: Number(result) || 0,
+        notes
+      })
+   
