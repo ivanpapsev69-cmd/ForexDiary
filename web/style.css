@@ -1,16 +1,18 @@
+
 /* =========================================
-   FOREX DIARY — COMPLETE MOBILE STYLES
+   FOREX DIARY — GOLD LUXURY THEME
+   Стили интерфейса. Логику приложения не меняем.
    ========================================= */
 
 :root {
   color-scheme: dark;
-  --bg: #080d14;
-  --surface: #111925;
-  --surface-2: #1b2636;
-  --border: #263244;
-  --text: #f3f6fb;
-  --muted: #929daf;
-  --blue: #5687f8;
+  --bg: #090909;
+  --surface: #15130e;
+  --surface-2: #211c10;
+  --border: #51401b;
+  --text: #f7f1df;
+  --muted: #b5aa8c;
+  --blue: #d6ad45;
   --green: #35d48a;
   --red: #ff6474;
   --nav-height: 70px;
@@ -92,14 +94,15 @@ svg {
   width: 64px;
   height: 64px;
   border-radius: 20px;
-  background: var(--blue);
-  color: #fff;
+  background: linear-gradient(135deg, #f4d77a, #a97b18);
+  color: #171107;
   font-size: 24px;
   font-weight: 800;
 }
 
 .loader h2 {
   margin: 5px 0 0;
+  color: #f2d574;
   font-size: 24px;
 }
 
@@ -142,6 +145,7 @@ svg {
 
 .topbar h1 {
   margin: 0;
+  color: #f2d574;
   font-size: 26px;
   font-weight: 750;
   line-height: 1.2;
@@ -162,6 +166,7 @@ svg {
   margin-left: auto;
   border-radius: 50%;
   background: var(--green);
+  box-shadow: 0 0 10px rgba(53, 212, 138, 0.35);
 }
 
 .back-button {
@@ -209,9 +214,12 @@ h3 {
 .balance-card {
   min-width: 0;
   padding: 20px 18px;
-  border: 1px solid var(--border);
+  border: 1px solid #6a5120;
   border-radius: 24px;
-  background: linear-gradient(145deg, #151f2e, #101722);
+  background: linear-gradient(145deg, #241d0d, #11100d);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(242, 213, 116, 0.08);
 }
 
 .balance-label {
@@ -222,6 +230,7 @@ h3 {
 
 .balance-value {
   margin-bottom: 16px;
+  color: #f2d574;
   font-size: clamp(30px, 8vw, 38px);
   font-weight: 800;
   line-height: 1.15;
@@ -284,10 +293,10 @@ h3 {
   width: 100%;
   min-height: 50px;
   padding: 13px 16px;
-  border: 0;
+  border: 1px solid #e2bd54;
   border-radius: 15px;
-  background: var(--blue);
-  color: #fff;
+  background: linear-gradient(135deg, #f2d574, #b88724);
+  color: #171107;
   font-size: 16px;
   font-weight: 750;
   text-align: center;
@@ -305,10 +314,10 @@ h3 {
   width: 100%;
   min-height: 44px;
   padding: 10px 14px;
-  border: 1px solid var(--border);
+  border: 1px solid #6a5120;
   border-radius: 14px;
   background: var(--surface-2);
-  color: var(--text);
+  color: #f2d574;
   font-weight: 700;
 }
 
@@ -317,7 +326,7 @@ h3 {
   padding: 7px 0;
   border: 0;
   background: transparent;
-  color: #80a7ff;
+  color: #e5c15c;
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -354,7 +363,7 @@ h3 {
 }
 
 .form-label {
-  color: #aeb9ca;
+  color: #d3c59e;
   font-size: 13px;
   font-weight: 700;
 }
@@ -367,14 +376,14 @@ h3 {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 15px;
-  background: #0d141e;
+  background: #100f0c;
   color: var(--text);
   font-size: 15px;
   outline: none;
 }
 
 .form-input::placeholder {
-  color: #748094;
+  color: #94886c;
   opacity: 1;
 }
 
@@ -387,8 +396,8 @@ select.form-input {
   appearance: none;
   -webkit-appearance: none;
   background-image:
-    linear-gradient(45deg, transparent 50%, #aeb9ca 50%),
-    linear-gradient(135deg, #aeb9ca 50%, transparent 50%);
+    linear-gradient(45deg, transparent 50%, #d6bd78 50%),
+    linear-gradient(135deg, #d6bd78 50%, transparent 50%);
   background-position:
     calc(100% - 19px) 22px,
     calc(100% - 14px) 22px;
@@ -425,7 +434,7 @@ textarea.form-input {
   padding: 10px 7px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #0d141e;
+  background: #100f0c;
   color: var(--muted);
   font-size: 13px;
   font-weight: 750;
@@ -467,8 +476,8 @@ textarea.form-input {
 
 .filter-button.active {
   border-color: var(--blue);
-  background: var(--blue);
-  color: #fff;
+  background: linear-gradient(135deg, #f2d574, #b88724);
+  color: #171107;
 }
 
 /* TRADE LIST */
@@ -487,7 +496,7 @@ textarea.form-input {
   justify-content: center;
   min-height: 160px;
   padding: 24px 16px;
-  border: 1px dashed #2b3748;
+  border: 1px dashed #51401b;
   border-radius: 20px;
   color: var(--muted);
   text-align: center;
@@ -510,6 +519,7 @@ textarea.form-input {
 
 .trade-card h3 {
   margin: 0 0 7px;
+  color: #f2d574;
 }
 
 .trade-card p {
@@ -536,6 +546,7 @@ textarea.form-input {
 .chart-card h2,
 .analytics-card h2 {
   margin-bottom: 12px;
+  color: #f2d574;
   font-size: 17px;
 }
 
@@ -556,6 +567,7 @@ textarea.form-input {
 
 #profile .balance-card h2 {
   margin-bottom: 8px;
+  color: #f2d574;
 }
 
 #profile .balance-card p {
@@ -578,9 +590,9 @@ textarea.form-input {
   max-width: 680px;
   margin: 0 auto;
   padding: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid #51401b;
   border-radius: 18px;
-  background: rgba(17, 25, 37, 0.97);
+  background: rgba(21, 19, 14, 0.97);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -618,8 +630,8 @@ textarea.form-input {
 }
 
 .nav-button.active {
-  background: #202c3d;
-  color: #fff;
+  background: #352a12;
+  color: #f5d778;
 }
 
 /* NOTIFICATIONS */
