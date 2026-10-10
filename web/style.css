@@ -162,3 +162,93 @@ textarea.form-input { min-height: 100px; resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* FOREX DIARY — BLACK & GOLD THEME */
+:root {
+  --bg: #08090c;
+  --surface: #111216;
+  --surface-2: #191a1f;
+  --surface-3: #222329;
+  --border: rgba(212, 175, 55, .20);
+  --text: #f7f4eb;
+  --muted: #aaa69a;
+  --blue: #d6ad55;
+  --blue-hover: #b88a2e;
+  --gold: #f4c66a;
+}
+
+html {
+  background: #08090c;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 85% -8%, rgba(212,175,55,.13), transparent 38%),
+    radial-gradient(ellipse at 0% 35%, rgba(212,175,55,.04), transparent 32%),
+    #08090c;
+}
+
+.loader-logo {
+  background: linear-gradient(145deg, #302613, #15120c);
+  border-color: rgba(244,198,106,.5);
+  color: #f4c66a;
+}
+
+.balance-card {
+  border-color: rgba(244,198,106,.35);
+  background: linear-gradient(135deg, #302613, #17140e 65%, #111216);
+}
+
+.primary-button {
+  background: linear-gradient(105deg, #d6ad55, #a77a25);
+  color: #171109;
+  border-color: rgba(255,220,140,.3);
+  box-shadow: 0 9px 22px rgba(212,175,55,.16);
+}
+
+.primary-button:hover {
+  background: linear-gradient(105deg, #e6c574, #bd9139);
+}
+
+.primary-button:active {
+  background: #b88a2e;
+}
+
+.text-button {
+  color: #f4c66a;
+}
+
+.secondary-button:hover {
+  border-color: rgba(244,198,106,.5);
+  background: rgba(244,198,106,.08);
+}
+
+.form-input:focus {
+  border-color: rgba(244,198,106,.85);
+  background: #17150f;
+  box-shadow: 0 0 0 3px rgba(244,198,106,.1);
+}
+
+.filter-button.active {
+  border-color: rgba(244,198,106,.55);
+  background: rgba(212,175,55,.14);
+  color: #f4d991;
+}
+
+.bottom-nav {
+  border-color: rgba(212,175,55,.24);
+  background: rgba(15,14,12,.96);
+}
+
+.nav-button.active {
+  background: linear-gradient(145deg, rgba(212,175,55,.2), rgba(212,175,55,.06));
+  color: #f4c66a;
+  box-shadow: inset 0 0 0 1px rgba(244,198,106,.16);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-color: #f4c66a;
+}
