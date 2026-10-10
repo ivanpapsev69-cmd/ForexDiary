@@ -1,764 +1,528 @@
-"use strict";
 
-/* =========================================
-   FOREX DIARY — APP.JS
-========================================= */
-
-const tg = window.Telegram?.WebApp;
-
-if (tg) {
-  tg.ready();
-  tg.expand();
-}
-
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => document.querySelectorAll(selector);
-
-let currentPage = "home";
-let currentFilter = "all";
-let selectedDirection = "BUY";
-let allTrades = [];
-let balanceValue = 100;
-
-/* =========================================
-   API
-========================================= */
-
-function getHeaders() {
-  return {
-    "Content-Type": "application/json",
-    "x-telegram-user-id": String(
-      tg?.initDataUnsafe?.user?.id || "demo"
-    )
-  };
-}
-
-async function api(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...getHeaders(),
-      ...(options.headers || {})
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Ошибка сервера: ${response.status}`);
-  }
-
-  return response.json();
-}
-
-/* =========================================
-   HELPERS
-========================================= */
-
-function showToast(message) {
-  const toast = $("#toast");
-  if (!toast) return;
-
-  toast.textContent = message;
-  toast.classList.add("show");
-
-  clearTimeout(showToast.timer);
-
-  showToast.timer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 3000);
-}
-
-function formatMoney(value) {
-  return (Number(value) || 0).toLocaleString("ru-RU", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-}
-
-function formatDate(value) {
-  if (!value) return "";
-
-  const date = new Date(
-    String(value).replace(" ", "T") + "Z"
-  );
-
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-
-  return date.toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function signedMoney(value) {
-  const n = Number(value) || 0;
-  return `${n > 0 ? "+" : ""}$${formatMoney(n)}`;
-}
-
-function setText(selector, value) {
-  const element = $(selector);
-  if (element) element.textContent = value;
-}
-
-function getTradeResult(trade) {
-  return Number(trade.result) || 0;
-}
-
-/* =========================================
-   NAVIGATION
-========================================= */
-
-function showPage(page) {
-  const target = $(`#${page}`);
-  if (!target) return;
-
-  currentPage = page;
-
-  $$(".page").forEach((element) => {
-    element.classList.toggle("active", element.id === page);
-  });
-
-  $$(".nav-button").forEach((button) => {
-    button.classList.toggle(
-      "active",
-      button.dataset.page === page
-    );
-  });
-
-  if (page === "home") {
-    loadHome();
-  } else if (page === "journal") {
-    loadJournal();
-  } else if (page === "stats") {
-    loadAnalytics();
-  } else if (page === "profile") {
-    loadBalance().catch(console.error);
-  }
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-/* =========================================
-   BALANCE
-========================================= */
-
-async function loadBalance() {
-  const data = await api("/api/balance");
-
-  balanceValue = Number(data.balance) || 0;
-
-  setText("#balance", formatMoney(balanceValue));
-
-  return balanceValue;
-}
-
-async function editBalance() {
-  const input = prompt(
-    "Введи новый баланс:",
-    String(balanceValue)
-  );
-
-  if (input === null) return;
-
-  const value = Number(String(input).replace(",", "."));
-
-  if (!Number.isFinite(value) || value < 0) {
-    showToast("Введи корректный баланс");
-    return;
-  }
-
-  try {
-    await api("/api/balance", {
-      method: "POST",
-      body: JSON.stringify({ balance: value })
-    });
-
-    balanceValue = value;
-
-    setText("#balance", formatMoney(balanceValue));
-
-    showToast("Баланс сохранён");
-
-    if (currentPage === "stats") {
-      await loadAnalytics();
-    }
-  } catch (error) {
-    console.error("Изменение баланса:", error);
-    showToast("Не удалось сохранить баланс");
-  }
-}
-
-/* =========================================
-   HOME
-========================================= */
-
-async function loadHome() {
-  try {
-    const [balance, stats, trades] = await Promise.all([
-      api("/api/balance"),
-      api("/api/stats"),
-      api("/api/trades")
-    ]);
-
-    balanceValue = Number(balance.balance) || 0;
-    allTrades = Array.isArray(trades) ? trades : [];
-
-    setText("#balance", formatMoney(balanceValue));
-    setText("#homeTotal", Number(stats.total) || 0);
-    setText("#homeProfit", formatMoney(stats.profit));
-    setText("#homeWinrate", `${Number(stats.winrate) || 0}%`);
-
-    renderHomeTrades(allTrades);
-  } catch (error) {
-    console.error("Загрузка главной:", error);
-    showToast("Не удалось загрузить данные");
-  }
-}
-
-function renderHomeTrades(trades) {
-  const container = $("#homeTradesList");
-  if (!container) return;
-
-  if (!trades.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div style="font-size:32px">📒</div>
-        <strong>Сделок пока нет</strong>
-        <span>Добавь первую сделку</span>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = trades.slice(0, 5).map((trade) => {
-    const result = getTradeResult(trade);
-    const resultClass = result > 0 ? "profit" : result < 0 ? "loss" : "";
-
-    return `
-      <div class="trade-card">
-        <div>
-          <strong>${escapeHtml(trade.pair || "Инструмент")}</strong>
-          <p>${escapeHtml(trade.direction || "")} · ${formatDate(trade.created_at)}</p>
-        </div>
-        <strong class="${resultClass}">${signedMoney(result)}</strong>
-      </div>
-    `;
-  }).join("");
-}
-
-/* =========================================
-   BUY / SELL
-========================================= */
-
-function setDirection(direction) {
-  selectedDirection = direction;
-
-  const hidden = $("#direction");
-  if (hidden) hidden.value = direction;
-
-  $$(".direction-button").forEach((button) => {
-    button.classList.toggle(
-      "active",
-      button.dataset.direction === direction
-    );
-  });
-}
-
-/* =========================================
-   ADD TRADE
-========================================= */
-
-async function addTrade(event) {
-  event?.preventDefault();
-
-  const pair = $("#pair")?.value.trim() || "";
-  const entry = $("#entry")?.value || "";
-  const stopLoss = $("#stop_loss")?.value || "";
-  const takeProfit = $("#take_profit")?.value || "";
-  const resultText = $("#result")?.value ?? "";
-  const notes = $("#notes")?.value.trim() || "";
-
-  if (!pair) {
-    showToast("Выбери торговый инструмент");
-    return;
-  }
-
-  if (resultText.trim() === "") {
-    showToast("Укажи финансовый результат");
-    return;
-  }
-
-  const result = Number(String(resultText).replace(",", "."));
-
-  if (!Number.isFinite(result)) {
-    showToast("Проверь финансовый результат");
-    return;
-  }
-
-  const submitButton = $('#tradeForm button[type="submit"]');
-
-  try {
-    if (submitButton) submitButton.disabled = true;
-
-    await api("/api/trades", {
-      method: "POST",
-      body: JSON.stringify({
-        pair,
-        direction: selectedDirection,
-        entry: Number(entry) || 0,
-        stop_loss: Number(stopLoss) || 0,
-        take_profit: Number(takeProfit) || 0,
-        result,
-        notes
-      })
-    });
-
-    $("#tradeForm")?.reset();
-    setDirection("BUY");
-
-    showToast("Сделка сохранена");
-
-    await loadHome();
-    showPage("journal");
-  } catch (error) {
-    console.error("Сохранение сделки:", error);
-    showToast("Не удалось сохранить сделку");
-  } finally {
-    if (submitButton) submitButton.disabled = false;
-  }
-}
-
-/* =========================================
-   JOURNAL
-========================================= */
-
-async function loadJournal() {
-  const container = $("#trades");
-  if (container) {
-    container.innerHTML = '<div class="empty-state">Загружаю сделки...</div>';
-  }
-
-  try {
-    const [trades, stats] = await Promise.all([
-      api("/api/trades"),
-      api("/api/stats")
-    ]);
-
-    allTrades = Array.isArray(trades) ? trades : [];
-
-    setText("#journalTotal", Number(stats.total) || 0);
-    setText("#journalProfit", formatMoney(stats.profit));
-    setText("#journalWinrate", `${Number(stats.winrate) || 0}%`);
-
-    renderJournal();
-  } catch (error) {
-    console.error("Журнал:", error);
-
-    if (container) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <strong>Не удалось загрузить сделки</strong>
-          <span>Проверь соединение и попробуй ещё раз</span>
-        </div>
-      `;
+(() => {
+  "use strict";
+
+  const tg = window.Telegram?.WebApp;
+  const API = "/api";
+  const $ = (id) => document.getElementById(id);
+
+  let trades = [];
+  let balance = 10000;
+  let activeFilter = "all";
+  let loading = false;
+
+  // 1. Скрываем заставку сразу, не дожидаясь сервера.
+  function hideLoader() {
+    const loader = $("loader");
+    if (loader) {
+      loader.style.display = "none";
+      loader.classList.add("hidden");
     }
   }
-}
 
-function renderJournal() {
-  const container = $("#trades");
-  if (!container) return;
+  function showLoader() {
+    const loader = $("loader");
+    if (loader) {
+      loader.style.display = "flex";
+      loader.classList.remove("hidden");
+    }
+  }
 
-  const today = new Date().toLocaleDateString("ru-RU");
+  // 2. Запускаем Telegram и интерфейс.
+  try {
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+  } catch (error) {
+    console.warn("Telegram WebApp:", error);
+  }
 
-  const filtered = allTrades.filter((trade) => {
-    const result = getTradeResult(trade);
+  // Заставка не должна оставаться на экране.
+  hideLoader();
+  window.addEventListener("load", hideLoader);
+  setTimeout(hideLoader, 1500);
 
-    if (currentFilter === "profit" && result <= 0) return false;
-    if (currentFilter === "loss" && result >= 0) return false;
+  function userHeaders(json = false) {
+    const headers = {};
+    if (json) headers["Content-Type"] = "application/json";
 
-    if (currentFilter === "today") {
-      const tradeDate = new Date(
-        String(trade.created_at || "").replace(" ", "T") + "Z"
-      );
+    const userId = tg?.initDataUnsafe?.user?.id;
+    if (userId) headers["x-telegram-user-id"] = String(userId);
 
-      if (
-        Number.isNaN(tradeDate.getTime()) ||
-        tradeDate.toLocaleDateString("ru-RU") !== today
-      ) {
-        return false;
+    return headers;
+  }
+
+  // 3. Защита от бесконечного ожидания ответа API.
+  async function api(url, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(API + url, {
+        ...options,
+        headers: {
+          ...userHeaders(Boolean(options.body)),
+          ...(options.headers || {})
+        },
+        signal: controller.signal,
+        cache: "no-store"
+      });
+
+      const text = await response.text();
+      let data = {};
+
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error("Сервер вернул неверный ответ.");
       }
+
+      if (!response.ok) {
+        throw new Error(data.error || `Ошибка сервера: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error("Сервер отвечает слишком долго. Попробуй ещё раз.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  function money(value) {
+    const number = Number(value) || 0;
+    return number.toLocaleString("ru-RU", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) + " $";
+  }
+
+  function setText(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value;
+  }
+
+  function toast(message) {
+    const el = $("toast");
+    if (!el) {
+      alert(message);
+      return;
     }
 
-    return true;
-  });
+    el.textContent = message;
+    el.style.display = "block";
+    el.classList.add("show");
 
-  if (!filtered.length) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div style="font-size:32px">📭</div>
-        <strong>Сделок нет</strong>
-        <span>В выбранном фильтре ничего нет</span>
-      </div>
-    `;
-    return;
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => {
+      el.classList.remove("show");
+      el.style.display = "";
+    }, 3000);
   }
 
-  container.innerHTML = filtered.map((trade) => {
-    const result = getTradeResult(trade);
-    const resultClass = result > 0 ? "profit" : result < 0 ? "loss" : "";
-
-    return `
-      <article class="trade-card">
-        <h3>${escapeHtml(trade.pair || "Инструмент")}</h3>
-        <p>
-          Направление: ${escapeHtml(trade.direction || "—")}
-        </p>
-        <p>Вход: ${escapeHtml(trade.entry ?? 0)}</p>
-        <p>Stop Loss: ${escapeHtml(trade.stop_loss ?? 0)}</p>
-        <p>Take Profit: ${escapeHtml(trade.take_profit ?? 0)}</p>
-        <p>Дата: ${formatDate(trade.created_at)}</p>
-        ${trade.notes ? `<p>Комментарий: ${escapeHtml(trade.notes)}</p>` : ""}
-        <p class="${resultClass}">
-          <strong>Результат: ${signedMoney(result)}</strong>
-        </p>
-        <button
-          class="secondary-button delete-trade"
-          type="button"
-          data-id="${Number(trade.id)}"
-        >Удалить сделку</button>
-      </article>
-    `;
-  }).join("");
-}
-
-async function deleteTrade(id) {
-  if (!confirm("Удалить эту сделку? Её результат будет вычтен из баланса.")) {
-    return;
-  }
-
-  try {
-    await api(`/api/trades/${encodeURIComponent(id)}`, {
-      method: "DELETE"
+  function setPage(page) {
+    document.querySelectorAll(".page").forEach((el) => {
+      el.classList.toggle("active", el.id === page);
+      el.classList.toggle("hidden", el.id !== page);
     });
 
-    showToast("Сделка удалена");
+    document.querySelectorAll(".nav-button").forEach((el) => {
+      el.classList.toggle("active", el.dataset.page === page);
+    });
 
-    await Promise.all([loadJournal(), loadHome()]);
+    if (page === "journal") renderTrades();
+    if (page === "stats") renderAnalytics();
 
-    if (currentPage === "stats") {
-      await loadAnalytics();
-    }
-  } catch (error) {
-    console.error("Удаление сделки:", error);
-    showToast("Не удалось удалить сделку");
+    hideLoader();
   }
-}
 
-/* =========================================
-   ANALYTICS
-========================================= */
+  function renderHome() {
+    setText("balance", money(balance));
 
-async function loadAnalytics() {
-  try {
-    const [trades, stats, balance] = await Promise.all([
-      api("/api/trades"),
-      api("/api/stats"),
-      api("/api/balance")
-    ]);
+    const total = trades.length;
+    const wins = trades.filter((t) => Number(t.result) > 0).length;
+    const profit = trades.reduce((sum, t) => sum + (Number(t.result) || 0), 0);
+    const winrate = total ? Math.round((wins / total) * 100) : 0;
 
-    allTrades = Array.isArray(trades) ? trades : [];
-    balanceValue = Number(balance.balance) || 0;
+    setText("homeTotal", total);
+    setText("homeProfit", money(profit));
+    setText("homeWinrate", winrate + "%");
 
-    const results = allTrades.map(getTradeResult);
+    const list = $("homeTradesList");
+    if (!list) return;
+
+    list.replaceChildren();
+
+    if (!trades.length) {
+      list.innerHTML = '<div class="empty-state">Пока нет сделок</div>';
+      return;
+    }
+
+    trades.slice(0, 3).forEach((trade) => {
+      list.appendChild(makeTradeCard(trade, false));
+    });
+  }
+
+  function makeTradeCard(trade, allowDelete = true) {
+    const card = document.createElement("div");
+    card.className = "trade-card";
+
+    const result = Number(trade.result) || 0;
+    const title = document.createElement("strong");
+    title.textContent = trade.pair || "Сделка";
+
+    const direction = document.createElement("span");
+    direction.textContent = trade.direction === "SELL" ? "SELL" : "BUY";
+
+    const amount = document.createElement("strong");
+    amount.textContent = (result > 0 ? "+" : "") + money(result);
+    amount.className = result >= 0 ? "profit" : "loss";
+
+    const date = document.createElement("small");
+    date.textContent = trade.created_at
+      ? new Date(trade.created_at.replace(" ", "T") + "Z").toLocaleString("ru-RU")
+      : "";
+
+    const notes = document.createElement("p");
+    notes.textContent = trade.notes || "";
+
+    card.append(title, document.createTextNode(" · "), direction, amount, date, notes);
+
+    if (allowDelete) {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "secondary-button";
+      remove.textContent = "Удалить";
+      remove.addEventListener("click", async () => {
+        if (!confirm("Удалить сделку? Баланс будет скорректирован.")) return;
+
+        try {
+          await api("/trades/" + encodeURIComponent(trade.id), {
+            method: "DELETE"
+          });
+          await refreshData();
+          toast("Сделка удалена");
+        } catch (error) {
+          toast(error.message);
+        }
+      });
+      card.appendChild(remove);
+    }
+
+    return card;
+  }
+
+  function renderTrades() {
+    const list = $("trades");
+    if (!list) return;
+
+    list.replaceChildren();
+
+    const filtered = trades.filter((trade) => {
+      const result = Number(trade.result) || 0;
+
+      if (activeFilter === "profit") return result > 0;
+      if (activeFilter === "loss") return result < 0;
+
+      if (activeFilter === "today") {
+        if (!trade.created_at) return false;
+        const date = new Date(trade.created_at.replace(" ", "T") + "Z");
+        const now = new Date();
+        return date.toDateString() === now.toDateString();
+      }
+
+      return true;
+    });
+
+    if (!filtered.length) {
+      list.innerHTML = '<div class="empty-state">Сделок пока нет</div>';
+      return;
+    }
+
+    filtered.forEach((trade) => list.appendChild(makeTradeCard(trade, true)));
+
+    const total = trades.length;
+    const wins = trades.filter((t) => Number(t.result) > 0).length;
+    const profit = trades.reduce((sum, t) => sum + (Number(t.result) || 0), 0);
+
+    setText("journalTotal", total);
+    setText("journalProfit", money(profit));
+    setText("journalWinrate", (total ? Math.round(wins / total * 100) : 0) + "%");
+  }
+
+  function renderAnalytics() {
+    const results = trades.map((t) => Number(t.result) || 0);
     const wins = results.filter((n) => n > 0);
     const losses = results.filter((n) => n < 0);
+    const totalProfit = results.reduce((a, b) => a + b, 0);
+    const winrate = results.length ? Math.round(wins.length / results.length * 100) : 0;
+    const grossWin = wins.reduce((a, b) => a + b, 0);
+    const grossLoss = Math.abs(losses.reduce((a, b) => a + b, 0));
 
-    const sumWins = wins.reduce((sum, n) => sum + n, 0);
-    const sumLosses = Math.abs(losses.reduce((sum, n) => sum + n, 0));
-    const totalProfit = results.reduce((sum, n) => sum + n, 0);
+    setText("analyticsTrades", results.length);
+    setText("aProfit", money(totalProfit));
+    setText("aWinrate", winrate + "%");
+    setText("aAvgWin", money(wins.length ? grossWin / wins.length : 0));
+    setText("aAvgLoss", money(losses.length ? grossLoss / losses.length : 0));
+    setText("aProfitFactor", grossLoss ? (grossWin / grossLoss).toFixed(2) : (grossWin ? "∞" : "0"));
+    setText("aExpectancy", money(results.length ? totalProfit / results.length : 0));
+    setText("aBest", money(results.length ? Math.max(...results) : 0));
+    setText("aWorst", money(results.length ? Math.min(...results) : 0));
 
-    const averageWin = wins.length ? sumWins / wins.length : 0;
-    const averageLoss = losses.length ? sumLosses / losses.length : 0;
-    const profitFactor = sumLosses > 0 ? sumWins / sumLosses : (sumWins > 0 ? Infinity : 0);
-    const expectancy = results.length ? totalProfit / results.length : 0;
+    let currentWin = 0, bestWin = 0, currentLoss = 0, bestLoss = 0;
+    [...trades].reverse().forEach((t) => {
+      const r = Number(t.result) || 0;
+      if (r > 0) {
+        currentWin++;
+        bestWin = Math.max(bestWin, currentWin);
+        currentLoss = 0;
+      } else if (r < 0) {
+        currentLoss++;
+        bestLoss = Math.max(bestLoss, currentLoss);
+        currentWin = 0;
+      } else {
+        currentWin = 0;
+        currentLoss = 0;
+      }
+    });
 
-    setText("#analyticsTrades", Number(stats.total) || 0);
-    setText("#aProfit", formatMoney(totalProfit));
-    setText("#aWinrate", `${Number(stats.winrate) || 0}%`);
-    setText("#aAvgWin", `$${formatMoney(averageWin)}`);
-    setText("#aAvgLoss", `$${formatMoney(averageLoss)}`);
-    setText("#aProfitFactor", Number.isFinite(profitFactor) ? profitFactor.toFixed(2) : "∞");
-    setText("#aExpectancy", `$${formatMoney(expectancy)}`);
-    setText("#aBest", `$${formatMoney(results.length ? Math.max(...results) : 0)}`);
-    setText("#aWorst", `$${formatMoney(results.length ? Math.min(...results) : 0)}`);
+    setText("aWinStreak", bestWin);
+    setText("aLossStreak", bestLoss);
 
-    const streaks = calculateStreaks(results);
-    setText("#aWinStreak", streaks.wins);
-    setText("#aLossStreak", streaks.losses);
-
-    renderEquityChart(allTrades, balanceValue);
-    renderPairAnalytics(allTrades);
-    renderDailyAnalytics(allTrades);
-  } catch (error) {
-    console.error("Статистика:", error);
-    showToast("Не удалось загрузить статистику");
+    drawChart();
+    renderBreakdown("pairAnalytics", (t) => t.pair || "Другое");
+    renderBreakdown("dailyAnalytics", (t) => {
+      if (!t.created_at) return "Без даты";
+      return t.created_at.slice(0, 10);
+    });
   }
-}
 
-function calculateStreaks(results) {
-  let currentWins = 0;
-  let currentLosses = 0;
-  let bestWins = 0;
-  let bestLosses = 0;
+  function renderBreakdown(id, getKey) {
+    const el = $(id);
+    if (!el) return;
 
-  results.slice().reverse().forEach((result) => {
-    if (result > 0) {
-      currentWins += 1;
-      currentLosses = 0;
-    } else if (result < 0) {
-      currentLosses += 1;
-      currentWins = 0;
-    } else {
-      currentWins = 0;
-      currentLosses = 0;
+    const groups = {};
+    trades.forEach((trade) => {
+      const key = getKey(trade);
+      groups[key] = (groups[key] || 0) + (Number(trade.result) || 0);
+    });
+
+    el.replaceChildren();
+    const entries = Object.entries(groups);
+
+    if (!entries.length) {
+      el.textContent = "Данных пока нет";
+      return;
     }
 
-    bestWins = Math.max(bestWins, currentWins);
-    bestLosses = Math.max(bestLosses, currentLosses);
-  });
-
-  return {
-    wins: bestWins,
-    losses: bestLosses
-  };
-}
-
-function renderPairAnalytics(trades) {
-  const container = $("#pairAnalytics");
-  if (!container) return;
-
-  const totals = {};
-
-  trades.forEach((trade) => {
-    const pair = trade.pair || "Без названия";
-    totals[pair] = (totals[pair] || 0) + getTradeResult(trade);
-  });
-
-  const entries = Object.entries(totals);
-
-  if (!entries.length) {
-    container.innerHTML = '<div class="empty-state">Пока нет данных</div>';
-    return;
+    entries.forEach(([key, value]) => {
+      const row = document.createElement("p");
+      row.textContent = `${key}: ${money(value)}`;
+      el.appendChild(row);
+    });
   }
 
-  container.innerHTML = entries
-    .sort((a, b) => b[1] - a[1])
-    .map(([pair, result]) => `
-      <div class="trade-card">
-        <strong>${escapeHtml(pair)}</strong>
-        <p class="${result > 0 ? "profit" : result < 0 ? "loss" : ""}">
-          ${signedMoney(result)}
-        </p>
-      </div>
-    `).join("");
-}
+  function drawChart() {
+    const canvas = $("equityChart");
+    if (!canvas) return;
 
-function renderDailyAnalytics(trades) {
-  const container = $("#dailyAnalytics");
-  if (!container) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-  const totals = {};
+    const width = canvas.clientWidth || 300;
+    const height = 180;
+    const ratio = window.devicePixelRatio || 1;
 
-  trades.forEach((trade) => {
-    const date = trade.created_at
-      ? String(trade.created_at).slice(0, 10)
-      : "Без даты";
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    canvas.style.height = height + "px";
+    ctx.scale(ratio, ratio);
+    ctx.clearRect(0, 0, width, height);
 
-    totals[date] = (totals[date] || 0) + getTradeResult(trade);
-  });
+    const values = [balance - trades.reduce((s, t) => s + (Number(t.result) || 0), 0)];
+    let current = values[0];
 
-  const entries = Object.entries(totals).sort((a, b) =>
-    a[0].localeCompare(b[0])
-  );
+    [...trades].reverse().forEach((t) => {
+      current += Number(t.result) || 0;
+      values.push(current);
+    });
 
-  if (!entries.length) {
-    container.innerHTML = '<div class="empty-state">Пока нет данных</div>';
-    return;
-  }
+    if (values.length < 2) {
+      ctx.fillStyle = "#999";
+      ctx.font = "14px sans-serif";
+      ctx.fillText("Добавь сделки, чтобы увидеть график", 12, 35);
+      return;
+    }
 
-  container.innerHTML = entries.map(([date, result]) => `
-    <div class="trade-card">
-      <strong>${escapeHtml(date)}</strong>
-      <p class="${result > 0 ? "profit" : result < 0 ? "loss" : ""}">
-        ${signedMoney(result)}
-      </p>
-    </div>
-  `).join("");
-}
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
 
-function renderEquityChart(trades, startingBalance) {
-  const canvas = $("#equityChart");
-  if (!canvas) return;
-
-  const width = Math.max(canvas.clientWidth || 300, 280);
-  const height = 190;
-  const ratio = window.devicePixelRatio || 1;
-
-  canvas.width = width * ratio;
-  canvas.height = height * ratio;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  ctx.scale(ratio, ratio);
-  ctx.clearRect(0, 0, width, height);
-
-  const sorted = trades.slice().reverse();
-  let running = Number(startingBalance) || 0;
-
-  const points = [running];
-
-  sorted.forEach((trade) => {
-    running += getTradeResult(trade);
-    points.push(running);
-  });
-
-  if (points.length === 1) {
-    ctx.fillStyle = "#929daf";
-    ctx.font = "14px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("Добавь сделки, чтобы увидеть график", width / 2, height / 2);
-    return;
-  }
-
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = max - min || 1;
-
-  const pad = 16;
-  const plotWidth = width - pad * 2;
-  const plotHeight = height - pad * 2;
-
-  ctx.strokeStyle = "#263244";
-  ctx.lineWidth = 1;
-
-  for (let i = 0; i < 4; i++) {
-    const y = pad + (plotHeight / 3) * i;
     ctx.beginPath();
-    ctx.moveTo(pad, y);
-    ctx.lineTo(width - pad, y);
+    values.forEach((v, i) => {
+      const x = 10 + i * (width - 20) / (values.length - 1);
+      const y = height - 15 - ((v - min) / range) * (height - 30);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+
+    ctx.strokeStyle = "#35d49a";
+    ctx.lineWidth = 2;
     ctx.stroke();
   }
 
-  ctx.beginPath();
+  async function refreshData() {
+    if (loading) return;
+    loading = true;
 
-  points.forEach((value, index) => {
-    const x = pad + (index / (points.length - 1)) * plotWidth;
-    const y = pad + plotHeight - ((value - min) / range) * plotHeight;
+    try {
+      const results = await Promise.all([
+        api("/balance"),
+        api("/trades")
+      ]);
 
-    if (index === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
+      balance = Number(results[0].balance) || 0;
+      trades = Array.isArray(results[1]) ? results[1] : [];
 
-  ctx.strokeStyle = points[points.length - 1] >= points[0] ? "#35d48a" : "#ff6474";
-  ctx.lineWidth = 3;
-  ctx.lineJoin = "round";
-  ctx.stroke();
-}
+      renderHome();
+      renderTrades();
+      renderAnalytics();
+    } catch (error) {
+      console.error("Forex Diary load error:", error);
+      toast(error.message);
+    } finally {
+      loading = false;
+      hideLoader();
+    }
+  }
 
-/* =========================================
-   EVENT HANDLERS
-========================================= */
-
-function bindEvents() {
-  $$(".nav-button, [data-page]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
+  // 4. Навигация.
+  document.querySelectorAll("[data-page]").forEach((button) => {
+    button.addEventListener("click", () => {
       const page = button.dataset.page;
-      if (page) showPage(page);
+      if (page) setPage(page);
     });
   });
 
-  $("#newTrade")?.addEventListener("click", () => showPage("add"));
-  $("#openJournal")?.addEventListener("click", () => showPage("journal"));
+  $("newTrade")?.addEventListener("click", () => setPage("add"));
+  $("openJournal")?.addEventListener("click", () => setPage("journal"));
 
-  $("#editBalance")?.addEventListener("click", editBalance);
-  $("#profileEditBalance")?.addEventListener("click", editBalance);
-
-  $("#tradeForm")?.addEventListener("submit", addTrade);
-
-  $$(".direction-button").forEach((button) => {
+  // 5. BUY / SELL.
+  document.querySelectorAll("[data-direction]").forEach((button) => {
     button.addEventListener("click", () => {
-      setDirection(button.dataset.direction);
-    });
-  });
+      const direction = button.dataset.direction;
+      if ($("direction")) $("direction").value = direction;
 
-  $$(".filter-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      currentFilter = button.dataset.filter || "all";
-
-      $$(".filter-button").forEach((item) => {
+      document.querySelectorAll("[data-direction]").forEach((item) => {
         item.classList.toggle("active", item === button);
       });
-
-      renderJournal();
     });
   });
 
-  $("#trades")?.addEventListener("click", (event) => {
-    const button = event.target.closest(".delete-trade");
-    if (button) deleteTrade(button.dataset.id);
+  // 6. Фильтры журнала.
+  document.querySelectorAll("[data-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeFilter = button.dataset.filter;
+      document.querySelectorAll("[data-filter]").forEach((item) => {
+        item.classList.toggle("active", item === button);
+      });
+      renderTrades();
+    });
   });
 
-  window.addEventListener("resize", () => {
-    if (currentPage === "stats") {
-      renderEquityChart(allTrades, balanceValue);
+  // 7. Добавление сделки.
+  $("tradeForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const resultValue = Number($("result")?.value);
+    if (!Number.isFinite(resultValue)) {
+      toast("Введи финансовый результат сделки.");
+      return;
+    }
+
+    const submit = $("tradeForm").querySelector('[type="submit"]');
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = "Сохраняем...";
+    }
+
+    try {
+      await api("/trades", {
+        method: "POST",
+        body: JSON.stringify({
+          pair: $("pair")?.value || "XAU/USD",
+          direction: $("direction")?.value || "BUY",
+          entry: $("entry")?.value || 0,
+          stop_loss: $("stop_loss")?.value || 0,
+          take_profit: $("take_profit")?.value || 0,
+          result: resultValue,
+          notes: $("notes")?.value || ""
+        })
+      });
+
+      $("tradeForm").reset();
+      if ($("direction")) $("direction").value = "BUY";
+      document.querySelectorAll("[data-direction]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.direction === "BUY");
+      });
+
+      await refreshData();
+      setPage("home");
+      toast("Сделка сохранена");
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = "Сохранить сделку";
+      }
     }
   });
-}
 
-/* =========================================
-   START APP
-========================================= */
+  // 8. Редактирование баланса.
+  async function editBalance() {
+    const answer = prompt("Введи новый баланс ($):", String(balance));
+    if (answer === null) return;
 
-async function startApp() {
-  bindEvents();
-  setDirection("BUY");
-
-  try {
-    await loadHome();
-  } catch (error) {
-    console.error("Старт приложения:", error);
-  } finally {
-    // Скрываем заставку даже при ошибке API.
-    const loader = $("#loader");
-
-    if (loader) {
-      loader.style.display = "none";
+    const value = Number(answer);
+    if (!Number.isFinite(value) || answer.trim() === "") {
+      toast("Введи корректное число.");
+      return;
     }
 
-    document.body.classList.add("app-ready");
+    try {
+      await api("/balance", {
+        method: "POST",
+        body: JSON.stringify({ balance: value })
+      });
+
+      balance = value;
+      renderHome();
+      renderAnalytics();
+      toast("Баланс сохранён");
+    } catch (error) {
+      toast(error.message);
+    }
   }
-}
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", startApp, { once: true });
-} else {
-  startApp();
-}
+  $("editBalance")?.addEventListener("click", editBalance);
+  $("profileEditBalance")?.addEventListener("click", editBalance);
+
+  // 9. Запуск без вечной заставки.
+  document.addEventListener("DOMContentLoaded", () => {
+    hideLoader();
+    refreshData();
+  });
+
+  // Скрипт может подключиться уже после DOMContentLoaded.
+  if (document.readyState !== "loading") {
+    hideLoader();
+    refreshData();
+  }
+
+  window.addEventListener("pageshow", hideLoader);
+})();
