@@ -6,10 +6,11 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   >
-  <meta name="theme-color" content="#07111f">
+  <meta name="theme-color" content="#080d14">
+  <meta name="description" content="Твой личный дневник трейдера">
   <title>Forex Diary</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=4">
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -35,7 +36,7 @@
     <main class="container">
       <div class="balance-card">
         <div class="balance-label">Текущий баланс</div>
-        <div id="balance" class="balance-value">$10,000.00</div>
+        <div id="balance" class="balance-value">$100.00</div>
         <button id="editBalance" class="secondary-button" type="button">
           Изменить баланс
         </button>
@@ -46,10 +47,12 @@
           <span>Сделки</span>
           <strong id="homeTotal">0</strong>
         </div>
+
         <div class="stat-card">
           <span>Результат</span>
           <strong id="homeProfit">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Винрейт</span>
           <strong id="homeWinrate">0%</strong>
@@ -164,6 +167,7 @@
           <label class="form-label" for="result">
             Финансовый результат ($)
           </label>
+
           <input
             id="result"
             class="form-input"
@@ -172,6 +176,7 @@
             placeholder="Например, 50 или -25"
             required
           >
+
           <small class="form-hint">
             Прибыль укажи положительным числом, убыток — отрицательным.
           </small>
@@ -180,6 +185,7 @@
         <!-- NOTES -->
         <div class="form-group">
           <label class="form-label" for="notes">Комментарий</label>
+
           <textarea
             id="notes"
             class="form-input"
@@ -218,10 +224,12 @@
           <span>Сделки</span>
           <strong id="journalTotal">0</strong>
         </div>
+
         <div class="stat-card">
           <span>Результат</span>
           <strong id="journalProfit">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Винрейт</span>
           <strong id="journalWinrate">0%</strong>
@@ -229,16 +237,35 @@
       </div>
 
       <div class="filter-buttons">
-        <button class="filter-button active" data-filter="all" type="button">
+        <button
+          class="filter-button active"
+          data-filter="all"
+          type="button"
+        >
           Все
         </button>
-        <button class="filter-button" data-filter="profit" type="button">
+
+        <button
+          class="filter-button"
+          data-filter="profit"
+          type="button"
+        >
           Прибыль
         </button>
-        <button class="filter-button" data-filter="loss" type="button">
+
+        <button
+          class="filter-button"
+          data-filter="loss"
+          type="button"
+        >
           Убыток
         </button>
-        <button class="filter-button" data-filter="today" type="button">
+
+        <button
+          class="filter-button"
+          data-filter="today"
+          type="button"
+        >
           Сегодня
         </button>
       </div>
@@ -264,42 +291,52 @@
           <span>Всего сделок</span>
           <strong id="analyticsTrades">0</strong>
         </div>
+
         <div class="stat-card">
           <span>Общий результат</span>
           <strong id="aProfit">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Винрейт</span>
           <strong id="aWinrate">0%</strong>
         </div>
+
         <div class="stat-card">
           <span>Средняя прибыль</span>
           <strong id="aAvgWin">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Средний убыток</span>
           <strong id="aAvgLoss">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Profit Factor</span>
           <strong id="aProfitFactor">0</strong>
         </div>
+
         <div class="stat-card">
           <span>Ожидание на сделку</span>
           <strong id="aExpectancy">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Лучшая сделка</span>
           <strong id="aBest">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Худшая сделка</span>
           <strong id="aWorst">$0.00</strong>
         </div>
+
         <div class="stat-card">
           <span>Серия побед</span>
           <strong id="aWinStreak">0</strong>
         </div>
+
         <div class="stat-card">
           <span>Серия убытков</span>
           <strong id="aLossStreak">0</strong>
@@ -336,10 +373,16 @@
       <div class="balance-card">
         <h2>Forex Diary</h2>
         <p>Твой личный дневник трейдера</p>
-        <p>Записывай сделки, отслеживай прибыль и анализируй ошибки.</p>
+        <p>
+          Записывай сделки, отслеживай прибыль и анализируй ошибки.
+        </p>
       </div>
 
-      <button id="profileEditBalance" class="secondary-button" type="button">
+      <button
+        id="profileEditBalance"
+        class="secondary-button"
+        type="button"
+      >
         Изменить баланс
       </button>
     </main>
@@ -347,27 +390,47 @@
 
   <!-- BOTTOM NAVIGATION -->
   <nav class="bottom-nav">
-    <button class="nav-button active" data-page="home" type="button">
+    <button
+      class="nav-button active"
+      data-page="home"
+      type="button"
+    >
       <span>⌂</span>
       <small>Главная</small>
     </button>
 
-    <button class="nav-button" data-page="add" type="button">
+    <button
+      class="nav-button"
+      data-page="add"
+      type="button"
+    >
       <span>＋</span>
       <small>Сделка</small>
     </button>
 
-    <button class="nav-button" data-page="journal" type="button">
+    <button
+      class="nav-button"
+      data-page="journal"
+      type="button"
+    >
       <span>▤</span>
       <small>Журнал</small>
     </button>
 
-    <button class="nav-button" data-page="stats" type="button">
+    <button
+      class="nav-button"
+      data-page="stats"
+      type="button"
+    >
       <span>▥</span>
       <small>Статистика</small>
     </button>
 
-    <button class="nav-button" data-page="profile" type="button">
+    <button
+      class="nav-button"
+      data-page="profile"
+      type="button"
+    >
       <span>⚙</span>
       <small>Профиль</small>
     </button>
@@ -376,6 +439,7 @@
   <!-- TOAST -->
   <div id="toast" class="toast"></div>
 
-  <script src="app.js"></script>
+  <!-- APP SCRIPT -->
+  <script src="app.js?v=4"></script>
 </body>
 </html>
