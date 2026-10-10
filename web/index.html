@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -10,19 +11,21 @@
   <meta name="description" content="Твой личный дневник трейдера">
   <title>Forex Diary</title>
 
-  <link rel="stylesheet" href="style.css?v=5">
+  <!-- Обновлённая версия стилей -->
+  <link rel="stylesheet" href="style.css?v=6">
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body>
-  <!-- LOADER -->
+  <!-- ЭКРАН ЗАГРУЗКИ -->
   <div id="loader" class="loader">
     <div class="loader-logo">FD</div>
     <h2>Forex Diary</h2>
     <p>Твой дневник трейдера</p>
   </div>
 
-  <!-- HOME -->
+  <!-- ГЛАВНАЯ -->
   <section id="home" class="page active">
     <header class="topbar">
       <div>
@@ -73,7 +76,7 @@
     </main>
   </section>
 
-  <!-- ADD TRADE -->
+  <!-- НОВАЯ СДЕЛКА -->
   <section id="add" class="page">
     <header class="topbar">
       <button class="back-button" data-page="home" type="button">←</button>
@@ -191,7 +194,7 @@
     </main>
   </section>
 
-  <!-- JOURNAL -->
+  <!-- ЖУРНАЛ СДЕЛОК -->
   <section id="journal" class="page">
     <header class="topbar">
       <div>
@@ -237,7 +240,7 @@
     </main>
   </section>
 
-  <!-- STATISTICS -->
+  <!-- СТАТИСТИКА -->
   <section id="stats" class="page">
     <header class="topbar">
       <div>
@@ -311,7 +314,7 @@
     </main>
   </section>
 
-  <!-- PROFILE -->
+  <!-- ПРОФИЛЬ -->
   <section id="profile" class="page">
     <header class="topbar">
       <div>
@@ -337,7 +340,7 @@
     </main>
   </section>
 
-  <!-- BOTTOM NAVIGATION -->
+  <!-- НИЖНЕЕ МЕНЮ -->
   <nav class="bottom-nav">
     <button class="nav-button active" data-page="home" type="button">
       <span>⌂</span>
@@ -361,10 +364,10 @@
     </button>
   </nav>
 
-  <!-- TOAST -->
+  <!-- УВЕДОМЛЕНИЕ -->
   <div id="toast" class="toast"></div>
 
-  <!-- LOADER FALLBACK -->
+  <!-- ЗАПАСНОЕ СКРЫТИЕ ЗАГРУЗКИ -->
   <script>
     window.setTimeout(function () {
       var loader = document.getElementById("loader");
@@ -383,7 +386,7 @@
     }, 1800);
   </script>
 
-  <!-- APP SCRIPT -->
+  <!-- ЛОГИКА ПРИЛОЖЕНИЯ НЕ МЕНЯЕТСЯ -->
   <script src="app.js?v=5"></script>
 </body>
 </html>
